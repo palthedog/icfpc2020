@@ -5,6 +5,7 @@
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
 
+#include <vm/vm.h>
 #include <types.h>
 
 using namespace std;
@@ -74,7 +75,15 @@ void printNum(bint num) {
   cout << numToStr(num) << endl;
 }
 
-int runLocal(int argc, char** argv) {
+void printSexp(const string& str) {
+  cout << "Input: " << str << endl;
+  Sexp sexp = parse(str);
+  cout << "Parsed: " << sexp << endl;
+  cout << "Int: " << sexp->to_int() << endl;
+}
+
+int runLocal(const string& path) {
+  /*
   printNum(1);
   printNum(7);
   printNum(8);
@@ -93,6 +102,11 @@ int runLocal(int argc, char** argv) {
 
   // Response
   cerr << decode("1101000") << endl;
+  */
+  //VM vm(path);
+  printSexp("ap ap sum 1 2");
+  printSexp("ap ap ap cons 1 2 sum");
+  
   return 0;
 }
 
@@ -102,12 +116,11 @@ int communicate() {
 }
 
 int main(int argc, char* argv[]) {
-#ifdef LOCAL
-  return runLocal(argc, argv);
-#else
+  if (argc == 2) {
+    return runLocal(argv[1]);
+  }
+
   serverUrl = argv[1];
   parseArgv(argc, argv);
   return communicate();
-#endif
-  
 }
