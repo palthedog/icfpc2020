@@ -1,8 +1,7 @@
-#include "parser.h"
+#include "types.h"
 
 #include <cstdlib>
 
-//#include <cmath>
 #include <iostream>
 
 using namespace std;

@@ -1,8 +1,5 @@
-#ifndef PARSER_H
-#define PARSER
-
-#include <vector>
-#include <string>
+#ifndef TYPES_H
+#define TYPES_H
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/multiprecision/cpp_dec_float.hpp>
@@ -15,4 +12,3 @@ std::string numToStr(bint num);
 bint decode(const std::string&bstr);
 
 #endif
-
