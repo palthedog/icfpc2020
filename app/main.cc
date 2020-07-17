@@ -1,10 +1,14 @@
 #include <iostream>
 #include <regex>
 #include <string>
+
 #include "httplib.h"
 
-int main(int argc, char* argv[])
-{
+#include "parser/parser.h"
+
+using namespace std;
+
+int communicate(int argc, char* argv[]) {
 	const std::string serverUrl(argv[1]);
 	const std::string playerKey(argv[2]);
 
@@ -37,3 +41,26 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+void printNum(bint num) {
+  cout << num << endl;
+  cout << numToStr(num) << endl;
+}
+
+int runLocal(int argc, char** argv) {
+  printNum(1);
+  printNum(7);
+  printNum(8);
+  printNum(508);
+  printNum(65537);
+  printNum(bint("8704918670857764736"));
+  return 0;
+}
+
+int main(int argc, char* argv[]) {
+#ifdef LOCAL
+  return runLocal(argc, argv);
+#else
+  return communicate(argc, argv);
+#endif
+  
+}
