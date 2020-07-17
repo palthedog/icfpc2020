@@ -12,6 +12,7 @@ using bint = mp::cpp_int;
 using breal = mp::cpp_dec_float_100;
 
 std::string numToStr(bint num);
+bint decode(const std::string&bstr);
 
 #endif
 

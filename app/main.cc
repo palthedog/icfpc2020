@@ -53,6 +53,18 @@ int runLocal(int argc, char** argv) {
   printNum(508);
   printNum(65537);
   printNum(bint("8704918670857764736"));
+
+  // From blog.
+  printNum(decode("110110000111011111100001001111110101000000"));
+
+  // From blog.
+  printNum(decode("110110000111011111100001001111110100110000"));
+
+  // Response for "1101000"
+  printNum(decode("110110000111011111100001001110011010000100"));
+
+  // Response
+  cerr << decode("1101000") << endl;
   return 0;
 }
 

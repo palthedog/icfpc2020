@@ -1,5 +1,7 @@
 #include "parser.h"
 
+#include <cstdlib>
+
 //#include <cmath>
 #include <iostream>
 
@@ -32,4 +34,19 @@ string numToStr(bint num) {
     s += '\n';
   }
   return s;
+}
+
+bint decode(const string&bstr) {
+  bint n;
+  for (int i = 0; i < bstr.size(); i++) {
+    n <<= 1;
+    if (bstr[i] == '1') {
+      n |= 1;
+    } else if (bstr[i] == '0') {
+    } else {
+      cerr << "Not a binary: " << bstr << endl;
+      exit(1);
+    }
+  }
+  return n;
 }
