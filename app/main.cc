@@ -77,7 +77,7 @@ void printNum(bint num) {
 
 void printSexp(const string& str) {
   cout << "Input: " << str << endl;
-  Sexp sexp = parse(str);
+  Sexp sexp = parse(nullptr, str);
   cout << "Parsed: " << sexp << endl;
   cout << "Eval: " << sexp->eval() << endl;
 }
@@ -112,11 +112,17 @@ int runLocal(const string& path) {
   printSexp("ap ap ap s mul ap add 1 6");
 
   printSexp("ap car ap ap cons 3 1");
-  printSexp("ap car 3");
-  
+  printSexp("ap car i");  // t
+
+  printSexp("ap ap eq 3 3");  // t
+  printSexp("ap ap eq 3 2");  // f
+
+  printSexp("ap ap t 42 ap inc 42");
 
   
-  //VM vm(path);
+  VM vm(path);
+  cout << "Evaluate galaxy" << endl;
+  cout << vm.protocol("galaxy")->eval() << endl;
   
   return 0;
 }

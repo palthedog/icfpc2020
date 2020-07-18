@@ -9,6 +9,8 @@
 
 #include <types.h>
 
+class VM;
+
 class Exp;
 typedef std::shared_ptr<Exp> Sexp;
 
@@ -22,8 +24,7 @@ class Exp {
   }
 
   virtual bint to_int() const {
-    std::cerr << "to_int not supported: " << *this << std::endl;
-    exit(1);
+    return this->eval()->to_int();
   }
 
   virtual Sexp eval() const {
@@ -33,6 +34,20 @@ class Exp {
 
   virtual bool isNil() const {
     return false;
+  }
+
+  virtual bool isCons() const {
+    return false;
+  }
+
+  virtual Sexp car() const {
+    std::cerr << "car not supported: " << *this << std::endl;
+    exit(1);
+  }
+  
+  virtual Sexp cdr() const {
+    std::cerr << "cdr not supported: " << *this << std::endl;
+    exit(1);
   }
   
   virtual void print(std::ostream&os) const = 0;
@@ -49,35 +64,22 @@ inline std::ostream& operator<<(std::ostream&os, const Sexp& e) {
   return os;
 }
 
-
-class Protocol : public Exp {
- private:
-  std::string name_;
-
- public:
-  Protocol(const std::string& token) {
-    name_ = token;
-  }
-
-  virtual ~Protocol() {}
-  
-  virtual void print(std::ostream&os) const {
-    os << name_;
-  }
-};
-
-class Line : public Exp {
+class Function : public Exp {
  private:
   int x_;
+  VM* vm_;
 
  public:
-  Line(const std::string& token) {
+  Function(VM*vm, const std::string& token) {
+    vm_ = vm;
     x_ = std::stoi(token.substr(1));
   }
 
   virtual void print(std::ostream&os) const {
     os << ":" << x_;
   }
+
+  virtual Sexp eval() const;
 };
 
 class Ap : public Exp {
@@ -112,10 +114,10 @@ class Ap : public Exp {
 
   virtual Sexp eval() const {
     if (f_ && arg_) {
-      return f_->eval()->bind(arg_->eval())->eval();
+      return f_->bind(arg_)->eval();
     }
     if (f_) {
-      return Sexp(new Ap(f_->eval()));
+      return Sexp(new Ap(f_));
     }
     return Sexp(new Ap());
   }
@@ -227,6 +229,18 @@ class Cons : public Exp {
     } else {
       os << "Cons(" << *a_ << ", " << *b_ << ")";
     }
+  }
+
+  virtual bool isCons() const {
+    return true;
+  }
+
+  virtual Sexp car() const {
+    return a_;
+  }
+
+  virtual Sexp cdr() const {
+    return b_;
   }
 };
 
@@ -409,23 +423,12 @@ class SComb : public Exp {
   }
 
   virtual Sexp eval() const {
-    Sexp a, b, c;
-    if (a_) {
-      a = a_->eval();
+    if (a_ && b_ && c_) {
+      Sexp l = ap(a_, c_);
+      Sexp r = ap(b_, c_);
+      return ap(l, r);
     }
-    if (b_) {
-      b = b_->eval();
-    }
-    if (c_) {
-      c = c_->eval();
-    }
-
-    if (a && b && c) {
-      Sexp l = ap(a, c)->eval();
-      Sexp r = ap(b, c)->eval();
-      return ap(l, r)->eval();
-    }
-    return Sexp(new SComb(a, b, c));
+    return Sexp(new SComb(a_, b_, c_));
   }
 };
 
@@ -481,10 +484,10 @@ class BinaryFunc : public Exp {
 
   virtual Sexp eval() const {
     if (a_ && b_) {
-      return body_(a_->eval(), b_->eval())->eval();
+      return body_(a_, b_)->eval();
     }
     if (a_) {
-      return Sexp(new BinaryFunc(name_, body_, a_->eval()));
+      return Sexp(new BinaryFunc(name_, body_, a_));
     }
     return Sexp(new BinaryFunc(name_, body_));
   }
@@ -494,7 +497,7 @@ class BinaryFunc : public Exp {
 inline Sexp CreateTrue() {
   return Sexp(new BinaryFunc(
       "t",
-      [](Sexp a, Sexp b){ return a; }));
+      [](Sexp a, Sexp b){ return a->eval(); }));
 }
 
 inline Sexp CreateFalse() {
@@ -546,19 +549,22 @@ class UnaryFunc : public Exp {
 };
 
 
-Sexp parse(std::istringstream& iss, bool lhs = false);
+Sexp parse(VM*vm, std::istringstream& iss);
 
-inline Sexp parse(std::string str, bool lhs = false) {
+inline Sexp parse(VM*vm, std::string str) {
   std::istringstream iss(str);
-  return parse(iss, lhs);
+  return parse(vm, iss);
 }
 
 class VM {
  public:
   VM(const std::string&path);
 
+  Sexp protocol(const std::string&name) const;
+  Sexp function(int index) const;
  private:
-  std::map<int, bint> vars;
+  std::map<int, Sexp> functions_;
+  std::map<std::string, Sexp> protocols_;
 };
 
 #endif

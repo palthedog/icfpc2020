@@ -5,7 +5,7 @@
 
 using namespace std;
 
-Sexp parse(istringstream& iss, bool lhs) {
+Sexp parse(VM*vm, istringstream& iss) {
   string token;
   if (!getline(iss, token, ' ')) {
     return Sexp();
@@ -13,17 +13,17 @@ Sexp parse(istringstream& iss, bool lhs) {
 
   Exp* p;
   if (token[0] == ':') {
-    p = new Line(token);
+    p = new Function(vm, token);
   } else if (token == "ap") {
     Sexp ap(new Ap());
 
-    Sexp f = parse(iss);
+    Sexp f = parse(vm, iss);
     if (!f) {
       return ap;
     }
     ap = ap->bind(f);
 
-    Sexp arg = parse(iss);
+    Sexp arg = parse(vm, iss);
     if (!arg) {
       return ap;
     }
@@ -40,14 +40,26 @@ Sexp parse(istringstream& iss, bool lhs) {
     p = new BinaryFunc(
         "sum",
         [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() + b->to_int())); });
+  } else if (token == "eq") {
+    p = new BinaryFunc(
+        "eq",
+        [](Sexp a, Sexp b){ return (a->eval()->to_int() == b->eval()->to_int()) ? CreateTrue() : CreateFalse(); });
+  } else if (token == "lt") {
+    p = new BinaryFunc(
+        "lt",
+        [](Sexp a, Sexp b){ return (a->to_int() < b->eval()->to_int()) ? CreateTrue() : CreateFalse(); });
   } else if (token == "t") {
     return CreateTrue();
-  } else if (token == "t") {
+  } else if (token == "f") {
     return CreateFalse();
   } else if (token == "mul") {
     p = new BinaryFunc(
         "mul",
         [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() * b->to_int())); });
+  } else if (token == "div") {
+    p = new BinaryFunc(
+        "div",
+        [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() / b->to_int())); });
   } else if (token == "inc") {
     p = new UnaryFunc(
         "inc",
@@ -64,12 +76,22 @@ Sexp parse(istringstream& iss, bool lhs) {
     p = new UnaryFunc(
         "isnil",
         [](Sexp a){ return a->isNil() ? CreateTrue() : CreateFalse() ; });
+  } else if (token == "car") {
+    p = new UnaryFunc(
+        "car",
+        [](Sexp a){ return a->isCons() ? a->car() : ap(a, CreateTrue()) ; });
+  } else if (token == "cdr") {
+    p = new UnaryFunc(
+        "cdr",
+        [](Sexp a){ return a->isCons() ? a->cdr() : ap(a, CreateFalse()) ; });
+  } else if (token == "i") {
+    p = new UnaryFunc(
+        "i",
+        [](Sexp a){ return a ; });
   } else if (token == "nil") {
     p = new Nil();
-  } else if (token[0] >= '0' && token[0] <= '9') {
+  } else if (token[0] == '-' || (token[0] >= '0' && token[0] <= '9')) {
     p = new Num(token);
-  } else if (lhs) {
-    p = new Protocol(token);
   } else {
     cerr << "Unknown: " << token << endl;
     cerr.flush();
@@ -77,7 +99,6 @@ Sexp parse(istringstream& iss, bool lhs) {
   }
   return Sexp(p);
 }
-
 
 VM::VM(const string&path) {
   ifstream ifs(path);
@@ -94,11 +115,42 @@ VM::VM(const string&path) {
     int p = line.find(" = ");
     const string l = line.substr(0, p);
     const string r = line.substr(p + 3);
-    
-    Sexp lhs = parse(l);
-    cout << "LHS: " << *lhs << endl;
 
-    Sexp rhs = parse(r);
-    cout << "RHS: " << *rhs << endl;    
+    cout << "LHS: " << l << endl;
+    
+
+    Sexp rhs = parse(this, r);
+    cout << "RHS: " << *rhs << endl;
+
+    if (l[0] == ':') {
+      // function
+      int funcNum = stoi(l.substr(1));
+      functions_[funcNum] = rhs;
+    } else {
+      // protocol
+      protocols_[l] = rhs;
+    }
   }
+}
+
+Sexp VM::protocol(const string&name) const {
+  auto f = protocols_.find(name);
+  if (f == protocols_.end()) {
+    cerr << "Invalid protocol name: " << name << endl;
+    exit(1);
+  }
+  return f->second;
+}
+
+Sexp VM::function(int index) const {
+  auto f = functions_.find(index);
+  if (f == functions_.end()) {
+    cerr << "Invalid function id: " << index << endl;
+    exit(1);
+  }
+  return f->second;
+}
+
+Sexp Function::eval() const {
+  return vm_->function(x_)->eval();
 }
