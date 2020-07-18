@@ -65,9 +65,9 @@ class Exp {
 inline Sexp eval(Sexp e) {
   while (!e->isNum()) {
     Exp* ori = e.get();
-    std::cerr << "ori: " << (long) ori << std::endl;
+    //std::cerr << "ori: " << (long) ori << std::endl;
     e = e->eval_(e);
-    std::cerr << "after: " << (long) e.get() << std::endl;
+    //std::cerr << "after: " << (long) e.get() << std::endl;
     if (ori == e.get()) {
       // not updated
       break;
