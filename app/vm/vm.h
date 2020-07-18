@@ -45,22 +45,12 @@ class Exp {
     return false;
   }
 
-  virtual Sexp car() const {
-    std::cerr << "car not supported: " << *this << std::endl;
-    exit(1);
-  }
-  
-  virtual Sexp cdr() const {
-    std::cerr << "cdr not supported: " << *this << std::endl;
-    exit(1);
-  }
-
   virtual std::string mod() const {
     std::cerr << "mod not supported: " << *this << std::endl;
     exit(1);
   }
 
-  virtual std::string dem() const {
+  virtual Sexp dem() const {
     std::cerr << "dem not supported: " << *this << std::endl;
     exit(1);
   }
@@ -71,9 +61,9 @@ class Exp {
 };
 
 inline Sexp eval(Sexp e) {
+  //std::cerr << "eval: " << str(e) << std::endl;
   while (!e->isNum()) {
     Exp* ori = e.get();
-    //std::cerr << "ori: " << (long) ori << std::endl;
     e = e->eval_(e);
     //std::cerr << "after: " << (long) e.get() << std::endl;
     if (ori == e.get()) {
@@ -81,6 +71,7 @@ inline Sexp eval(Sexp e) {
       break;
     }
   }
+  e = e->eval_(e);
   return e;
 }
 
@@ -98,18 +89,7 @@ inline Sexp call(Sexp e, Sexp a0, Sexp a1, Sexp a2) {
 }
 
 inline bint to_int(Sexp e) {
-  //std::cout << "to_int: " << str(e) << std::endl;
-  while (!e->isNum()) {
-    //std::cerr << e << " is not num." << std::endl;
-    Exp* ori = e.get();
-    e = eval(e);
-    //std::cerr << "evaled: " << e << std::endl;
-    if (ori == e.get()) {
-      // not updated
-      std::cerr << "Failed to eval to int: " << str(e) << std::endl;
-      exit(1);
-    }
-  }
+  e = eval(e);
   return e->to_int_();
 }
 
@@ -173,13 +153,13 @@ class Ap : public Exp {
     }
     os  << ")";
   }
-
+  
   Sexp eval_(Sexp _this) const override{
-    //std::cerr << "ap eval: " << str(_this) << std::endl;
     if (f_ && arg_) {
-      //std::cerr << str(f_) << ", " << str(arg_) << std::endl;
-      return call(eval(f_), arg_);
+      Sexp e = eval(call(eval(f_), arg_));
+      return e;
     }
+
     return Exp::eval_(_this);
   }
   
@@ -216,6 +196,9 @@ class Num : public Exp {
       : num_(num) {
   }
 
+  virtual ~Num() {
+  }
+  
   virtual void print(std::ostream&os) const {
     os << num_;
   }
@@ -288,19 +271,41 @@ class Cons : public Exp {
 */
 
 class ModResult : public Exp {
-  bint num_;
+  std::string mod_;
  public:
-  ModResult(bint num): num_(num) {
+  ModResult(std::string mod): mod_(mod) {
   }
 
   virtual ~ModResult() {
   }
 
   virtual void print(std::ostream&os) const {
-    os << "mod(" << num_ << ")";
+    os << "mod(" << mod_ << ")";
   }
 
-  std::string mod() const override;
+  std::string mod() const override {
+    return mod_;
+  }
+};
+
+class DemResult : public Exp {
+  std::string mod_;
+ public:
+  DemResult(std::string mod_str): mod_(mod_str) {
+  }
+
+  virtual ~DemResult() {
+  }
+
+  virtual void print(std::ostream&os) const {
+    os << "dem(" << mod_ << ")";
+  }
+
+  Sexp dem() const override {
+    std::cerr << "TODO: parse " << mod_ << std::endl;
+    exit(1);
+    return num(0);
+  }
 };
 
 class UnaryFunc : public Exp {
@@ -385,7 +390,7 @@ class TriFunc : public Exp {
             name_ + "(" + str(arg) + ")",
             [=](Sexp a, Sexp b) {
               *&_this; // capture this
-              auto ret = body_(arg, a, b);
+              Sexp ret = body_(arg, a, b);
               return ret;
             }));
   }
@@ -395,7 +400,8 @@ inline Sexp SComb() {
   return Sexp(new TriFunc(
       "s",
       [](Sexp a, Sexp b, Sexp c) {
-        return ap(ap(eval(a), eval(c)), ap(eval(b), eval(c)));
+        Sexp ec = eval(c);
+        return ap(ap(a, ec), ap(b, ec));
       }));
 }
 
@@ -412,6 +418,9 @@ inline Sexp CreateFalse() {
 class Nil : public Exp {
  public:
   Nil() {
+  }
+
+  virtual ~Nil() {
   }
 
   virtual void print(std::ostream&os) const {
@@ -459,6 +468,45 @@ inline Sexp List(Sexp x0) {
 inline Sexp List(Sexp x0, Sexp x1) {
   return ap(ap(Cons(), x0), List(x1));
 }
+
+inline Sexp Car() {
+  return Sexp(new UnaryFunc(
+      "car",
+      [](Sexp a){
+        Sexp e = eval(a);
+        return ap(e, CreateTrue());
+      }));
+}
+
+inline Sexp Cdr() {
+  return Sexp(new UnaryFunc(
+      "cdr",
+      [](Sexp a){
+        Sexp e = eval(a);
+        return ap(e, CreateFalse());
+      }));
+}
+
+inline Sexp If0() {
+  return Sexp(new TriFunc(
+      "if0",
+      [](Sexp c, Sexp a, Sexp b){
+        bint e = to_int(c);
+        return e == 0 ? a : b;
+      }));
+}
+
+std::string modImpl(Sexp a);
+
+inline Sexp Mod() {
+  return Sexp(new UnaryFunc(
+      "mod",
+      [](Sexp a){
+        return Sexp(new ModResult(modImpl(a)));
+      }));
+}
+
+Sexp Dem();
 
 Sexp parse(VM*vm, std::istringstream& iss);
 

@@ -21,11 +21,16 @@ std::string str(const Exp* e) {
   return oss.str();
 }
 
-Sexp send_impl(Sexp l) {
-  cerr << "send_impl: " << l << endl;
-  // TODO
-  exit(1);
-  return Sexp(new Nil());;
+Sexp send() {
+  return Sexp(new UnaryFunc(
+      "send",
+      [](Sexp a) {
+        Sexp sendData = eval(call(Mod(), a));
+        cerr << "send: " << sendData << endl;
+        // TODO
+        exit(1);
+        return a;
+      }));
 }
 
 Sexp parse(VM*vm, istringstream& iss) {
@@ -49,20 +54,18 @@ Sexp parse(VM*vm, istringstream& iss) {
     }
     return ap(f, arg);
   } else if (token == "send") {
-    p = new UnaryFunc(
-        "send",
-        send_impl);
+    return send();
   } else if (token == "c") {
     p = new TriFunc(
         "c",
         [](Sexp x0, Sexp x1, Sexp x2) {
-          return eval(ap(ap(eval(x0), eval(x2)), eval(x1)));
+          return ap(ap(x0, x2), x1);
         });
   } else if (token == "b") {
     p = new TriFunc(
         "b",
         [](Sexp x0, Sexp x1, Sexp x2) {
-          return eval(ap(eval(x0), ap(eval(x1), eval(x2))));
+          return ap(x0, ap(x1, x2));
         });
   } else if (token == "s") {
     return SComb();
@@ -94,11 +97,15 @@ Sexp parse(VM*vm, istringstream& iss) {
   } else if (token == "mul") {
     p = new BinaryFunc(
         "mul",
-        [](Sexp a, Sexp b){ return Sexp(new Num(to_int(a) * to_int(b))); });
+        [](Sexp a, Sexp b){
+          return Sexp(new Num(to_int(a) * to_int(b)));
+        });
   } else if (token == "div") {
     p = new BinaryFunc(
         "div",
         [](Sexp a, Sexp b){ return Sexp(new Num(to_int(a) / to_int(b))); });
+  } else if (token == "if0") {
+    return If0();
   } else if (token == "inc") {
     p = new UnaryFunc(
         "inc",
@@ -115,55 +122,25 @@ Sexp parse(VM*vm, istringstream& iss) {
     p = new UnaryFunc(
         "isnil",
         [](Sexp a){
-          auto e = eval(a);
+          Sexp e = eval(a);
           return e->isNil() ? CreateTrue() : CreateFalse() ;
         });
   } else if (token == "car") {
-    /*
-    p = new UnaryFunc(
-        "car",
-        [](Sexp a){
-          auto e = eval(a);
-          return e->isCons() ? e->car() : ap(e, CreateTrue());
-        });
-    */
-    p = new UnaryFunc(
-        "car",
-        [](Sexp a){
-          auto e = eval(a);
-          return ap(a, CreateTrue());
-        });
+    return Car();
   } else if (token == "cdr") {
-    /*
-    p = new UnaryFunc(
-        "cdr",
-        [](Sexp a){
-          auto e = eval(a);
-          return e->isCons() ? e->cdr() : ap(e, CreateFalse()) ;
-        });
-    */
-    p = new UnaryFunc(
-        "cdr",
-        [](Sexp a){
-          auto e = eval(a);
-          return ap(a, CreateFalse());
-        });
+    return Cdr();
   } else if (token == "i") {
     p = new UnaryFunc(
         "i",
-        [](Sexp a){ return a ; });
+        [](Sexp a){ return eval(a) ; });
   } else if (token == "nil") {
     p = new Nil();
   } else if (token[0] == '-' || (token[0] >= '0' && token[0] <= '9')) {
     p = new Num(token);
   } else if (token == "mod") {
-    p = new UnaryFunc(
-        "mod",
-        [](Sexp a){
-          auto e = to_int(a);
-          return Sexp(new ModResult(e));
-        });
-    
+    return Mod();
+  } else if (token == "dem") {
+    return Dem();
   } else {
     cerr << "Unknown: " << token << endl;
     cerr.flush();
@@ -207,21 +184,32 @@ VM::VM(const string&path) {
 
 Sexp interact();
 
+Sexp modem() {
+  return Sexp(new UnaryFunc(
+      "modem",
+      [](Sexp x0) {
+        return ap(Dem(), ap(Mod(), x0));
+      }));
+}
+
 Sexp f38() {
   return Sexp(new BinaryFunc(
       "f38",
       [=](Sexp p, Sexp a) {
-        auto e = eval(a);
-        cerr << "Arg: " << e << endl;
-        auto flag = e->car();
-        auto newState = e->cdr()->car();
-        auto data = e->cdr()->cdr()->car();
-        if (to_int(a->car()) == 0) {
+        cerr << "Arg: " << a << endl;
+        Sexp flag = call(Car(), a);
+        Sexp newState = call(Car(), call(Cdr(), a));
+        Sexp data = call(Cdr(), call(Cdr(), a));
+        cerr << "Flag: " << to_int(flag) << endl;
+        if (flag == 0) {
           // modem
           cerr << "f38 -> modem" << endl;
+          exit(1);
         } else {
-          //interact(p, 
-          cerr << "i38 -> nteract" << endl;
+          cerr << "f38 -> interact" << endl;
+          cerr << "newState: " << str(newState) << endl;
+          cerr << "data: " << str(data) << endl;
+          call(interact(), p, call(modem(), newState), call(send(), data));
         }
         return Sexp(new Nil());
       }));
@@ -232,7 +220,8 @@ Sexp interact() {
       "interact",
       [=](Sexp p, Sexp s, Sexp v) {
         cerr << "in interact" << endl;
-        return call(f38(), p, call(p, s, v));
+        return ap(ap(f38(), p), ap(ap(p, s), v));
+        //return call(f38(), p, call(p, s, v));
       }));
 }
 
@@ -242,7 +231,8 @@ Sexp VM::interact(
     Sexp vec) const {
   cerr << "vm.interact" << endl;
   Sexp p = eval(protocol(name));
-  return call(::interact(), p, state, vec);
+  //return call(::interact(), p, state, vec);
+  return ap(ap(ap(::interact(), p), state), vec);
 }
 
 Sexp VM::protocol(const string&name) const {
@@ -261,22 +251,23 @@ Sexp VM::function(int index) const {
     exit(1);
   }
   auto ret = f->second;
-  cout << "func@: " << index << << " " << f << endl;
+  //cout << "func@: " << index << " " << str(ret) << endl;
   return ret;
 }
 
 Sexp Function::call_(Sexp _this, Sexp arg) const{
-  auto f = vm_->function(index_);
-  return call(f, eval(arg));
+  Sexp f = vm_->function(index_);
+  //cout << "func.call: " << str(f) << " " << str(arg) << endl;
+  return call(f, arg);
 }
 
 Sexp Function::eval_(Sexp _this) const{
-  auto f = vm_->function(index_);
+  Sexp f = vm_->function(index_);
+  //cout << "func.eval: " << str(f) << endl;
   return eval(f);
 }
 
-std::string ModResult::mod() const {
-  bint num = num_;
+std::string modNum(bint num) {
   cerr << "mod(" << num << ")" << endl;
   string s;
   if (num >= 0) {
@@ -286,8 +277,8 @@ std::string ModResult::mod() const {
     num = -num;
   }
 
-  int width;  
-  int bits;
+  int width = 0;  
+  int bits = 0;
   if (num == 0) {
     width = 0;
   } else {
@@ -314,4 +305,27 @@ std::string ModResult::mod() const {
     }
   }
   return s;
+}
+
+std::string modImpl(Sexp e) {
+  e = eval(e);
+  if (e->isNum()) {
+    return modNum(to_int(e));
+  }
+  if (e->isNil()) {
+    return "00";
+  }
+  string s;
+  s += "11";  // cons
+  s += modImpl(eval(call(Car(), e)));
+  s += modImpl(eval(call(Cdr(), e)));
+  return s;
+}
+
+Sexp Dem() {
+  return Sexp(new UnaryFunc(
+      "dem",
+      [](Sexp a) {
+        return Sexp(new DemResult(eval(a)->mod()));
+      }));
 }

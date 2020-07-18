@@ -39,6 +39,7 @@ bool parseArgv(int argc, char**argv) {
 
   cout << "ServerURL: " << serverUrl << endl;
 	std::cout << "ServerName: " << serverName << "; PlayerKey: " << playerKey << std::endl;
+  return true;
 }
 
 bool post(const string&path, const string& body) {
@@ -114,6 +115,7 @@ int runLocal(const string& path) {
   */
 
   /*
+
   printSexp("ap ap add 1 2");
   printSexp("ap ap ap cons 1 2 add");
   printSexp("ap ap ap c add 1 2");
@@ -121,7 +123,7 @@ int runLocal(const string& path) {
   printSexp("ap ap ap s add inc 1");
 
   printSexp("ap ap ap s mul ap add 1 6");
-
+    
   printSexp("ap ap t 1 5");
   printSexp("ap ap t t i");
   printSexp("ap ap t t ap inc 5");
@@ -149,15 +151,36 @@ int runLocal(const string& path) {
   printSexp("ap car ap ap cons t f");
   printSexp("ap car i");
   printSexp("ap cdr i");
+
+  printSexp("ap isnil nil");
+  printSexp("ap isnil ap ap cons 1 2");
+
+  printSexp("ap ap lt -19 -20");
+
+  printSexp("ap ap div 4 2");
+  printSexp("ap ap div 4 3");
+  printSexp("ap ap div 4 5");
+  printSexp("ap ap div 6 -2");
+  printSexp("ap ap div -5 3");
+  printSexp("ap ap div -5 -3");
   */
 
+  printSexp("ap mod nil");
+  printSexp("ap mod ap ap cons nil nil");
+  printSexp("ap mod ap ap cons 0 nil");
+  printSexp("ap mod ap ap cons 1 2");
+  printSexp("ap mod ap ap cons 1 ap ap cons 2 nil");
+  
+  /*  
   VM vm(path);
   //auto vec0 = 
-  auto p = vm.interact("galaxy", nil(), Vec(num(0), num(0)));
-  //auto p = vm.protocol("galaxy");
-  cout << "Start evaluating: " << p << endl;
+  //Sexp p = vm.protocol("galaxy");
+  Sexp p = vm.interact("galaxy", nil(), Vec(num(0), num(0)));
+  // Sexp p = vm.function(1141);
+  cout << "Start evaluating: " << str(p) << endl;
   cout << "p = " << eval(p) << endl;
-   return 0;
+  */
+  return 0;
 }
 
 int communicate() {
