@@ -7,6 +7,8 @@
 
 #include "vm.h"
 
+#include <plot.h>
+
 namespace mp = boost::multiprecision;
 
 using namespace std;
@@ -203,6 +205,9 @@ Sexp draw() {
            Sexp x = eval(call(Car(), h));
            Sexp y = eval(call(Cdr(), h));
            cerr << "DRAW(" << x << ", " << y << ")" << endl;
+           if (plot) {
+             plot->draw((int)to_int(x), (int)to_int(y));
+           }
            
            x0 = eval(call(Cdr(), x0));
         }
@@ -256,7 +261,14 @@ Sexp f38() {
         if (intFlag == 0) {
           // modem
           cerr << "f38 -> draw: " << data << endl;
-          return List(eval(call(modem(), newState)), call(multipledraw(), data));
+          if (plot) {
+            plot->startDraw();
+          }
+          Sexp drw = call(multipledraw(), data);
+          if (plot) {
+            plot->endDraw();
+          }
+          return List(eval(call(modem(), newState)), drw);
         } else {
           cerr << "f38 -> interact" << endl;
           cerr << "newState: " << str(newState) << endl;

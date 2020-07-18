@@ -7,6 +7,7 @@
 
 #include <vm/vm.h>
 #include <types.h>
+#include <plot.h>
 
 using namespace std;
 
@@ -15,6 +16,8 @@ string serverUrl;
 string serverName;
 int serverPort;
 string playerKey;
+
+std::shared_ptr<Plot> plot;
 
 bool parseArgv(int argc, char**argv) {
 	const std::regex urlRegexp("(http|https)://([^/:]+)(:\\d+)?/?");
@@ -99,6 +102,7 @@ void printMod(const string& str) {
 }
 
 int runLocal(const string& path) {
+  plot.reset(new Plot());
   /*
   printNum(1);
   printNum(7);
