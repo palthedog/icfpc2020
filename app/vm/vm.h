@@ -212,63 +212,9 @@ class Num : public Exp {
   }
 };
 
-inline Sexp num(int n) {
+inline Sexp num(bint n) {
   return Sexp(new Num(n));
 }
-
-/*
-class Cons : public Exp {
-  Sexp a_;
-  Sexp b_;
-
- public:
-  Cons() {
-  }
-
-  Cons(Sexp a)
-      : a_(a) {
-  }
-
-  Cons(Sexp a, Sexp b)
-      : a_(a)
-      , b_(b) {
-  }
-
-  virtual ~Cons() {}
-
-  virtual Sexp call_(Sexp _this, const Sexp arg) const override {
-    if (!a_) {
-      return Sexp(new Cons(arg));
-    } else if (!b_) {
-      return Sexp(new Cons(a_, arg));
-    } else {
-      return ap(ap(arg, a_), b_);
-    }
-  }
-
-  virtual void print(std::ostream&os) const {
-    if (!a_) {
-      os << "cons(?, ?)";
-    } else if (!b_) {
-      os << "cons(" << *a_ << ", ?)";
-    } else {
-      os << "cons(" << *a_ << ", " << *b_ << ")";
-    }
-  }
-
-  virtual bool isCons() const {
-    return true;
-  }
-
-  Sexp car() const override {
-    return a_;
-  }
-
-  Sexp cdr() const override {
-    return b_;
-  }
-};
-*/
 
 class ModResult : public Exp {
   std::string mod_;
@@ -285,26 +231,6 @@ class ModResult : public Exp {
 
   std::string mod() const override {
     return mod_;
-  }
-};
-
-class DemResult : public Exp {
-  std::string mod_;
- public:
-  DemResult(std::string mod_str): mod_(mod_str) {
-  }
-
-  virtual ~DemResult() {
-  }
-
-  virtual void print(std::ostream&os) const {
-    os << "dem(" << mod_ << ")";
-  }
-
-  Sexp dem() const override {
-    std::cerr << "TODO: parse " << mod_ << std::endl;
-    exit(1);
-    return num(0);
   }
 };
 

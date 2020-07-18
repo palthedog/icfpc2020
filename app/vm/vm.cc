@@ -1,5 +1,6 @@
 #include <fstream>
 #include <cstdlib>
+#include <tuple>
 
 #include <types.h>
 
@@ -322,10 +323,69 @@ std::string modImpl(Sexp e) {
   return s;
 }
 
+tuple<Sexp, string> demElem(string s) {
+  cerr << "demElem: " << s << endl;
+
+  // number
+  string h = s.substr(0, 2);
+  string tail = s.substr(2);
+
+  if (h == "00") {
+    // nil;
+    return forward_as_tuple(nil(), tail);
+  }
+
+  bool negative = h == "10";
+  int width = 0;
+  while (tail[width] == '1') {
+    width++;
+  }
+  int bits = width * 4;
+  cerr << "width: " << width << ", bits: " << bits << endl;
+  tail = tail.substr(width + 1); // +1 for last '0'
+  cerr << "tail: " << tail << endl;
+  
+  string numStr = tail.substr(0, bits);
+  cerr << "numStr: " << numStr << endl;
+  
+  bint n = 0;
+  if (numStr != "") {
+    n = decode(numStr);
+  }
+  if (negative) {
+    n = -n;
+  }
+  return forward_as_tuple(num(n), tail.substr(bits));
+}
+  
+Sexp demImpl(string s) {
+  cerr << "dem: " << s << endl;
+
+  string h = s.substr(0, 2);
+  string tail;
+
+  if (h == "11") {
+    // cons
+    Sexp hExp;
+    tail = s.substr(2);
+    tie(hExp, tail) = demElem(tail);
+    cerr << "cons(" << hExp << " ..." << endl;
+    return call(Cons(), hExp, demImpl(tail));
+  }
+
+  Sexp numExp;
+  tie(numExp, tail) = demElem(s);
+  if (tail != "") {
+    cerr << "Tail should be empty but: " << tail <<endl;
+    exit(1);
+  }
+  return numExp;
+}
+
 Sexp Dem() {
   return Sexp(new UnaryFunc(
       "dem",
       [](Sexp a) {
-        return Sexp(new DemResult(eval(a)->mod()));
+        return demImpl(eval(a)->mod());
       }));
 }

@@ -165,11 +165,18 @@ int runLocal(const string& path) {
   printSexp("ap ap div -5 -3");
   */
 
+  // mod
   printSexp("ap mod nil");
   printSexp("ap mod ap ap cons nil nil");
   printSexp("ap mod ap ap cons 0 nil");
   printSexp("ap mod ap ap cons 1 2");
   printSexp("ap mod ap ap cons 1 ap ap cons 2 nil");
+
+  printSexp("ap dem ap mod nil");
+  printSexp("ap dem ap mod ap ap cons nil nil");
+  printSexp("ap dem ap mod ap ap cons 0 nil");
+  printSexp("ap dem ap mod ap ap cons 1 2");
+  printSexp("ap dem ap mod ap ap cons 1 ap ap cons 2 nil");
   
   /*  
   VM vm(path);
