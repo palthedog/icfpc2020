@@ -260,7 +260,9 @@ Sexp VM::function(int index) const {
     cerr << "Invalid function id: " << index << endl;
     exit(1);
   }
-  return f->second;
+  auto ret = f->second;
+  cout << "func@: " << index << << " " << f << endl;
+  return ret;
 }
 
 Sexp Function::call_(Sexp _this, Sexp arg) const{
