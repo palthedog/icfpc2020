@@ -268,7 +268,9 @@ Sexp f38() {
           if (plot) {
             plot->endDraw();
           }
-          return List(eval(call(modem(), newState)), drw);
+          Sexp ns = eval(call(modem(), newState));
+          cerr << "New State: " << ns << endl;
+          return List(ns, drw);
         } else {
           cerr << "f38 -> interact" << endl;
           cerr << "newState: " << str(newState) << endl;

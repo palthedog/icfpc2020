@@ -26,6 +26,7 @@ class Plot {
   void startDraw();
   void draw(int x, int y);
   void endDraw();
+  std::string read();
 };
 
 extern std::shared_ptr<Plot> plot;

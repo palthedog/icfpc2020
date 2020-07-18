@@ -102,7 +102,6 @@ void printMod(const string& str) {
 }
 
 int runLocal(const string& path) {
-  plot.reset(new Plot());
   /*
   printNum(1);
   printNum(7);
@@ -196,13 +195,32 @@ int runLocal(const string& path) {
   cerr << call(Mod(), List(num(1), List(num(2), num(3)), num(4))) << endl;
   cerr << call(Dem(), call(Mod(), List(num(1), List(num(2), num(3)), num(4)))) << endl;
 
-  VM vm(path);
-  //auto vec0 = 
-  //Sexp p = vm.protocol("galaxy");
-  Sexp p = vm.interact("galaxy", nil(), Vec(num(0), num(0)));
-  // Sexp p = vm.function(1141);
-  cout << "Start evaluating: " << str(p) << endl;
-  cout << "p = " << eval(p) << endl;
+  int x = 0;
+  int y = 0;
+  Sexp state = nil();
+  while (true) {
+    plot.reset(new Plot());
+
+    cout << "x: " << x << ", y: " << y << endl;
+
+    VM vm(path);
+    //auto vec0 = 
+    //Sexp p = vm.protocol("galaxy");
+    Sexp p = vm.interact("galaxy", state, Vec(num(x), num(y)));
+    // Sexp p = vm.function(1141);
+    cout << "Start evaluating: " << str(p) << endl;
+
+    Sexp result = eval(p);
+    cout << "p = " << result << endl;
+
+    state = call(Car(), result);
+
+    string response = plot->read();
+    string cmd;
+    cout << "from plotter: " << response << endl;
+    istringstream iss(response);
+    iss >> cmd >> x >> y;
+  }
   return 0;
 }
 
