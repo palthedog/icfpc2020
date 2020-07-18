@@ -25,6 +25,11 @@ class Exp {
     std::cerr << "to_int not supported: " << *this << std::endl;
     exit(1);
   }
+
+  virtual Sexp eval() const {
+    std::cerr << "eval not supported: " << *this << std::endl;
+    exit(1);
+  }
   
   virtual void print(std::ostream&os) const = 0;
 
@@ -72,6 +77,7 @@ class Line : public Exp {
 
 class Ap : public Exp {
   Sexp f_;
+  Sexp arg_;
   
  public:
   Ap()
@@ -81,23 +87,48 @@ class Ap : public Exp {
   Ap(Sexp f)
       : f_(f) {
   }
+  
+  Ap(Sexp f, Sexp arg)
+      : f_(f)
+      , arg_(arg) {
+  }
 
   virtual ~Ap() {}
 
   virtual void print(std::ostream&os) const {
     os << "ap";
     if (f_) {
-      os << " " << f_;
+      os << "(" << f_ << ")";
     }
+    if (arg_) {
+      os << "(" << arg_ << ")";
+    }
+  }
+
+  virtual Sexp eval() const {
+    if (f_ && arg_) {
+      return f_->eval()->bind(arg_->eval())->eval();
+    }
+    if (f_) {
+      return Sexp(new Ap(f_->eval()));
+    }
+    return Sexp(new Ap());
   }
 
   virtual Sexp bind(std::shared_ptr<Exp> arg) {
     if (!f_) {
       return Sexp(new Ap(arg));
     }
-    return f_->bind(arg);
+    if (!arg_) {
+      return Sexp(new Ap(f_, arg));
+    }
+    return Exp::bind(arg);
   }
 };
+
+inline Sexp ap(Sexp f, Sexp a) {
+  return Sexp(new Ap(f, a));
+}
 
 class Nil : public Exp {
  public:
@@ -106,6 +137,10 @@ class Nil : public Exp {
 
   virtual void print(std::ostream&os) const {
     os << "nil";
+  }
+
+  virtual Sexp eval() const {
+    return Sexp(new Nil());
   }
 };
 
@@ -123,6 +158,10 @@ class Num : public Exp {
 
   virtual void print(std::ostream&os) const {
     os << num_;
+  }
+
+  virtual Sexp eval() const {
+    return Sexp(new Num(num_));
   }
 
   virtual bint to_int() const {
@@ -155,19 +194,229 @@ class Cons : public Exp {
     } else if (!b_) {
       return Sexp(new Cons(a_, arg));
     } else {
-      Sexp s(new Ap(arg));
-      return s->bind(a_)->bind(b_);
+      Sexp s(new Ap(arg, a_));
+      return Sexp(new Ap(s, b_));
+    }
+  }
+
+  virtual Sexp eval() const {
+    Sexp a, b;
+    if (a_) {
+      a = a_->eval();
+    }
+    if (b_) {
+      b = b_->eval();
+    }
+    return Sexp(new Cons(a, b));
+  }
+  
+  virtual void print(std::ostream&os) const {
+    if (!a_) {
+      os << "Cons(?, ?)";
+    } else if (!b_) {
+      os << "Cons(" << *a_ << ", ?)";
+    } else {
+      os << "Cons(" << *a_ << ", " << *b_ << ")";
+    }
+  }
+};
+
+class CComb : public Exp {
+  Sexp a_;
+  Sexp b_;
+  Sexp c_;
+
+ public:
+  CComb() {
+  }
+
+  CComb(Sexp a)
+      : a_(a) {
+  }
+
+  CComb(Sexp a, Sexp b)
+      : a_(a)
+      , b_(b) {
+  }
+
+  CComb(Sexp a, Sexp b, Sexp c)
+      : a_(a)
+      , b_(b)
+      , c_(c){
+  }
+
+  virtual ~CComb() {}
+
+  virtual Sexp bind(Sexp arg) {
+    if (!a_) {
+      return Sexp(new CComb(arg));
+    } else if (!b_) {
+      return Sexp(new CComb(a_, arg));
+    } else if (!c_) {
+      return Sexp(new CComb(a_, b_, arg));
+    } else {
+      return Exp::bind(arg);
     }
   }
 
   virtual void print(std::ostream&os) const {
     if (!a_) {
-      os << "Cons(?, ?)";
+      os << "CComb";
     } else if (!b_) {
-      os << "Cons(" << *a_ << ", ?)" << std::endl;
+      os << "CComb(" << *a_ << ")";
+    } else if (!b_) {
+      os << "CComb(" << *a_ << b_ << ")";
     } else {
-      os << "Cons(" << *a_ << ", " << *b_ << ")" << std::endl;
+      os << "CComb(" << *a_ << ", " << *b_ << ", " << *c_ << ")";
     }
+  }
+
+  virtual Sexp eval() const {
+    if (a_ && b_ && c_) {
+      return Sexp(new Ap(Sexp(new Ap(a_, c_)), b_))->eval();
+    }
+    return Sexp(new CComb(a_, b_, c_));
+  }
+};
+
+class BComb : public Exp {
+  Sexp a_;
+  Sexp b_;
+  Sexp c_;
+
+ public:
+  BComb() {
+  }
+
+  BComb(Sexp a)
+      : a_(a) {
+  }
+
+  BComb(Sexp a, Sexp b)
+      : a_(a)
+      , b_(b) {
+  }
+
+  BComb(Sexp a, Sexp b, Sexp c)
+      : a_(a)
+      , b_(b)
+      , c_(c){
+  }
+
+  virtual ~BComb() {}
+
+  virtual Sexp bind(Sexp arg) {
+    if (!a_) {
+      return Sexp(new BComb(arg));
+    } else if (!b_) {
+      return Sexp(new BComb(a_, arg));
+    } else if (!c_) {
+      return Sexp(new BComb(a_, b_, arg));
+    } else {
+      return Exp::bind(arg);
+    }
+  }
+
+  virtual void print(std::ostream&os) const {
+    if (!a_) {
+      os << "BComb";
+    } else if (!b_) {
+      os << "BComb(" << *a_ << ")";
+    } else if (!b_) {
+      os << "BComb(" << *a_ << b_ << ")";
+    } else {
+      os << "BComb(" << *a_ << ", " << *b_ << ", " << *c_ << ")";
+    }
+  }
+
+  virtual Sexp eval() const {
+    Sexp a, b, c;
+    if (a_) {
+      a = a_->eval();
+    }
+    if (b_) {
+      b = b_->eval();
+    }
+    if (c_) {
+      c = c_->eval();
+    }
+
+    if (a && b && c) {
+      return ap(a_->eval(), ap(b_->eval(), c_->eval()))->eval();
+    }
+
+    return Sexp(new BComb(a, b, c));
+  }
+};
+
+class SComb : public Exp {
+  Sexp a_;
+  Sexp b_;
+  Sexp c_;
+
+ public:
+  SComb() {
+  }
+
+  SComb(Sexp a)
+      : a_(a) {
+  }
+
+  SComb(Sexp a, Sexp b)
+      : a_(a)
+      , b_(b) {
+  }
+
+  SComb(Sexp a, Sexp b, Sexp c)
+      : a_(a)
+      , b_(b)
+      , c_(c){
+  }
+
+  virtual ~SComb() {}
+
+  virtual Sexp bind(Sexp arg) {
+    if (!a_) {
+      return Sexp(new SComb(arg));
+    } else if (!b_) {
+      return Sexp(new SComb(a_, arg));
+    } else if (!c_) {
+      return Sexp(new SComb(a_, b_, arg));
+    } else {
+      return Exp::bind(arg);
+    }
+  }
+
+  virtual void print(std::ostream&os) const {
+    if (!a_) {
+      os << "SComb";
+    } else if (!b_) {
+      os << "SComb(" << *a_ << ")";
+    } else if (!b_) {
+      os << "SComb(" << *a_ << b_ << ")";
+    } else {
+      os << "SComb(" << *a_ << ", " << *b_ << ", " << *c_ << ")";
+    }
+  }
+
+  virtual Sexp eval() const {
+    Sexp a, b, c;
+    if (a_) {
+      a = a_->eval();
+    }
+    if (b_) {
+      b = b_->eval();
+    }
+    if (c_) {
+      c = c_->eval();
+    }
+
+    if (a && b && c) {
+      Sexp l = ap(a, c)->eval();
+      Sexp r = ap(b, c)->eval();
+      return ap(l, r)->eval();
+    }
+    return Sexp(new SComb(a, b, c));
   }
 };
 
@@ -213,16 +462,67 @@ class BinaryFunc : public Exp {
 
   virtual void print(std::ostream&os) const {
     if (!a_) {
-      os << name_ << "(?, ?)";
+      os << name_ << "()";
     } else if (!b_) {
-      os << name_ << "(" << a_ << ", ?)";
+      os << name_ << "(" << a_ << ")";
     } else {
       os << name_ << "(" << a_ << ", " << b_ << ")";
     }
   }
 
-  virtual bint to_int() const {
-    return body_(a_, b_)->to_int();
+  virtual Sexp eval() const {
+    if (a_ && b_) {
+      return body_(a_->eval(), b_->eval())->eval();
+    }
+    if (a_) {
+      return Sexp(new BinaryFunc(name_, body_, a_->eval()));
+    }
+    return Sexp(new BinaryFunc(name_, body_));
+  }
+
+};
+
+class UnaryFunc : public Exp {
+ public:
+  std::string name_;
+  std::function<Sexp(Sexp)> body_;
+  Sexp a_;
+
+  UnaryFunc(std::string name, std::function<Sexp(Sexp)> body)
+      : name_(name)
+      , body_(body){}
+
+  UnaryFunc(std::string name,
+            std::function<Sexp(Sexp)> body,
+            Sexp a)
+      : name_(name)
+      , body_(body)
+      , a_(a) {
+  }
+
+  virtual ~UnaryFunc() {}
+
+  virtual Sexp bind(Sexp arg) {
+    if (!a_) {
+      return Sexp(new UnaryFunc(name_, body_, arg));
+    }
+    return Exp::bind(arg);
+  }
+
+  virtual void print(std::ostream&os) const {
+    if (!a_) {
+      os << name_ << "(?)";
+    } else {
+      os << name_ << "(" << a_ << ")";
+    }
+  }
+
+  virtual Sexp eval() const {
+    if (a_) {
+      Sexp a = a_->eval();
+      return body_(a)->eval();
+    }
+    return Sexp(new UnaryFunc(name_, body_));
   }
 };
 

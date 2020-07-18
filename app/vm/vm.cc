@@ -28,12 +28,34 @@ Sexp parse(istringstream& iss, bool lhs) {
       return ap;
     }
     return ap->bind(arg);
+  } else if (token == "c") {
+    p = new CComb();
+  } else if (token == "b") {
+    p = new BComb();
+  } else if (token == "s") {
+    p = new SComb();
   } else if (token == "cons") {
     p = new Cons();
-  } else if (token == "sum") {
+  } else if (token == "add") {
     p = new BinaryFunc(
         "sum",
         [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() + b->to_int())); });
+  } else if (token == "mul") {
+    p = new BinaryFunc(
+        "mul",
+        [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() * b->to_int())); });
+  } else if (token == "inc") {
+    p = new UnaryFunc(
+        "inc",
+        [](Sexp a){ return Sexp(new Num(a->to_int() + 1)); });
+  } else if (token == "dec") {
+    p = new UnaryFunc(
+        "dec",
+        [](Sexp a){ return Sexp(new Num(a->to_int() - 1)); });
+  } else if (token == "neg") {
+    p = new UnaryFunc(
+        "neg",
+        [](Sexp a){ return Sexp(new Num(-a->to_int())); });
   } else if (token == "nil") {
     p = new Nil();
   } else if (token[0] >= '0' && token[0] <= '9') {
@@ -42,6 +64,7 @@ Sexp parse(istringstream& iss, bool lhs) {
     p = new Protocol(token);
   } else {
     cerr << "Unknown: " << token << endl;
+    cerr.flush();
     exit(1);
   }
   return Sexp(p);
@@ -55,9 +78,10 @@ VM::VM(const string&path) {
     cerr << "Failed to open file: " << path << endl;
   }
 
+  int i = 0;
   string line;
   while (getline(ifs, line)) {
-    cout << "line: " << line << endl;
+    cout << (i++) << " line: " << line << endl;
 
     int p = line.find(" = ");
     const string l = line.substr(0, p);
