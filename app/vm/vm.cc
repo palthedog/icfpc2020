@@ -59,15 +59,15 @@ Sexp parse(VM*vm, istringstream& iss) {
   } else if (token == "add") {
     p = new BinaryFunc(
         "add",
-        [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() + b->to_int())); });
+        [](Sexp a, Sexp b){ return Sexp(new Num(to_int(a) + to_int(b))); });
   } else if (token == "eq") {
     p = new BinaryFunc(
         "eq",
-        [](Sexp a, Sexp b){ return (a->to_int() == b->to_int()) ? CreateTrue() : CreateFalse(); });
+        [](Sexp a, Sexp b){ return (to_int(a) == to_int(b)) ? CreateTrue() : CreateFalse(); });
   } else if (token == "lt") {
     p = new BinaryFunc(
         "lt",
-        [](Sexp a, Sexp b){ return (a->to_int() < b->to_int()) ? CreateTrue() : CreateFalse(); });
+        [](Sexp a, Sexp b){ return (to_int(a) < to_int(b)) ? CreateTrue() : CreateFalse(); });
   } else if (token == "t") {
     return CreateTrue();
   } else if (token == "f") {
@@ -75,35 +75,44 @@ Sexp parse(VM*vm, istringstream& iss) {
   } else if (token == "mul") {
     p = new BinaryFunc(
         "mul",
-        [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() * b->to_int())); });
+        [](Sexp a, Sexp b){ return Sexp(new Num(to_int(a) * to_int(b))); });
   } else if (token == "div") {
     p = new BinaryFunc(
         "div",
-        [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() / b->to_int())); });
+        [](Sexp a, Sexp b){ return Sexp(new Num(to_int(a) / to_int(b))); });
   } else if (token == "inc") {
     p = new UnaryFunc(
         "inc",
-        [](Sexp a){ return Sexp(new Num(a->to_int() + 1)); });
+        [](Sexp a){ return Sexp(new Num(to_int(a) + 1)); });
   } else if (token == "dec") {
     p = new UnaryFunc(
         "dec",
-        [](Sexp a){ return Sexp(new Num(a->to_int() - 1)); });
+        [](Sexp a){ return Sexp(new Num(to_int(a) - 1)); });
   } else if (token == "neg") {
     p = new UnaryFunc(
         "neg",
-        [](Sexp a){ return Sexp(new Num(-a->to_int())); });
+        [](Sexp a){ return Sexp(new Num(-to_int(a))); });
   } else if (token == "isnil") {
     p = new UnaryFunc(
         "isnil",
-        [](Sexp a){ return a->isNil() ? CreateTrue() : CreateFalse() ; });
+        [](Sexp a){
+          auto e = eval(a);
+          return e->isNil() ? CreateTrue() : CreateFalse() ;
+        });
   } else if (token == "car") {
     p = new UnaryFunc(
         "car",
-        [](Sexp a){ return a->isCons() ? a->car() : ap(a, CreateTrue()) ; });
+        [](Sexp a){
+          auto e = eval(a);
+          return e->isCons() ? e->car() : ap(e, CreateTrue());
+        });
   } else if (token == "cdr") {
     p = new UnaryFunc(
         "cdr",
-        [](Sexp a){ return a->isCons() ? a->cdr() : ap(a, CreateFalse()) ; });
+        [](Sexp a){
+          auto e = eval(a);
+          return e->isCons() ? e->cdr() : ap(e, CreateFalse()) ;
+        });
   } else if (token == "i") {
     p = new UnaryFunc(
         "i",
@@ -171,8 +180,14 @@ Sexp VM::function(int index) const {
   return f->second;
 }
 
-Sexp Function::call(Sexp _this, Sexp arg) const{
+Sexp Function::call_(Sexp _this, Sexp arg) const{
   auto f = vm_->function(index_);
-  cout << "func.call: " << f << ", arg: " << arg << endl;
-  return f->call(f, arg);
+  //cout << "func.call: " << f << ", arg: " << arg << endl;
+  return call(f, arg);
+}
+
+Sexp Function::eval_(Sexp _this) const{
+  auto f = vm_->function(index_);
+  //cout << "func.eval: " << f << endl;
+  return eval(f);
 }

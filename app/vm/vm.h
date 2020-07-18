@@ -21,14 +21,22 @@ class Exp {
  public:
   virtual ~Exp() {}
   
-  virtual Sexp call(Sexp _this, const Sexp a) const {
+  virtual Sexp call_(Sexp _this, const Sexp a) const {
     std::cerr << "call not supported: " << *this << "; arg: " << *a << std::endl;
     exit(1);
   }
+  
+  virtual Sexp eval_(Sexp _this) const {
+    return _this;
+  }
 
-  virtual bint to_int() const {
+  virtual bint to_int_() const {
     std::cerr << "to_int not supported: " << *this << std::endl;
     exit(1);
+  }
+
+  virtual bool isNum() const {
+    return false;
   }
 
   virtual bool isNil() const {
@@ -54,6 +62,39 @@ class Exp {
   friend std::ostream& operator<<(std::ostream&os, const Exp&e);
 };
 
+inline Sexp eval(Sexp e) {
+  while (!e->isNum()) {
+    Exp* ori = e.get();
+    std::cerr << "ori: " << (long) ori << std::endl;
+    e = e->eval_(e);
+    std::cerr << "after: " << (long) e.get() << std::endl;
+    if (ori == e.get()) {
+      // not updated
+      break;
+    }
+  }
+  return e;
+}
+
+inline Sexp call(Sexp e, Sexp arg) {
+  return e->call_(e, arg);
+}
+
+inline bint to_int(Sexp e) {
+  while (!e->isNum()) {
+    //std::cerr << e << " is not num." << std::endl;
+    Exp* ori = e.get();
+    e = eval(e);
+    //std::cerr << "evaled: " << e << std::endl;
+    if (ori == e.get()) {
+      // not updated
+      std::cerr << "Failed to eval to int: " << e << std::endl;
+      exit(1);
+    }
+  }
+  return e->to_int_();
+}
+
 inline std::ostream& operator<<(std::ostream&os, const Exp&e) {
   e.print(os);
   return os;
@@ -78,11 +119,13 @@ class Function : public Exp {
     os << ":" << index_;
   }
 
-  Sexp call(Sexp _this, Sexp arg) const override;
+  Sexp call_(Sexp _this, Sexp arg) const override;
+  Sexp eval_(Sexp _this) const override;
 };
 
 class Ap : public Exp {
   Sexp f_;
+  Sexp arg_;
   
  public:
   Ap()
@@ -92,30 +135,49 @@ class Ap : public Exp {
   Ap(Sexp f)
       : f_(f) {
   }
+
+  Ap(Sexp f, Sexp arg)
+      : f_(f)
+      , arg_(arg) {
+  }
   
   virtual ~Ap() {
-    std::cerr << "ap destroyed: " << str(this) << std::endl;
+    //std::cerr << "ap destroyed: " << str(this) << std::endl;
   }
 
   void print(std::ostream&os) const override {
-    os << "ap";
+    os << "(ap ";
     if (f_) {
-      os << "(" << f_ << ", )";
+      os << f_ << ",";
     }
+    if (arg_) {
+      os << arg_;
+    }
+    os  << ")";
   }
 
-  Sexp call(Sexp _this, const Sexp arg) const override {
+  Sexp eval_(Sexp _this) const override{
+    std::cerr << "ap eval: " << str(_this) << std::endl;
+    if (f_ && arg_) {
+      std::cerr << str(f_) << ", " << str(arg_) << std::endl;
+      return call(eval(f_), arg_);
+    }
+    return Exp::eval_(_this);
+  }
+  
+  Sexp call_(Sexp _this, const Sexp arg) const override {
     if (!f_) {
       return Sexp(new Ap(arg));
     }
-    std::cerr << "call: " << f_ << std::endl;
-    return f_->call(f_, arg);
+    //std::cerr << "ap call: " << str(_this) << std::endl;
+    auto r = call(f_, arg);
+    //std::cerr << "result: " << r << std::endl;
+    return r;
   }
 };
 
 inline Sexp ap(Sexp f, Sexp a) {
-  std::cout << "ap: " << str(f) << ", " << str(a) << std::endl;
-  return f->call(f, a);
+  return Sexp(new Ap(f, a));
 }
 
 inline Sexp ap(Sexp f) {
@@ -156,8 +218,12 @@ class Num : public Exp {
     os << num_;
   }
 
-  virtual bint to_int() const {
+  bint to_int_() const override {
     return num_;
+  }
+
+  bool isNum() const override {
+    return true;
   }
 };
 
@@ -180,7 +246,7 @@ class Cons : public Exp {
 
   virtual ~Cons() {}
 
-  virtual Sexp call(Sexp _this, const Sexp arg) const override {
+  virtual Sexp call_(Sexp _this, const Sexp arg) const override {
     if (!a_) {
       return Sexp(new Cons(arg));
     } else if (!b_) {
@@ -192,11 +258,11 @@ class Cons : public Exp {
 
   virtual void print(std::ostream&os) const {
     if (!a_) {
-      os << "Cons(?, ?)";
+      os << "cons(?, ?)";
     } else if (!b_) {
-      os << "Cons(" << *a_ << ", ?)";
+      os << "cons(" << *a_ << ", ?)";
     } else {
-      os << "Cons(" << *a_ << ", " << *b_ << ")";
+      os << "cons(" << *a_ << ", " << *b_ << ")";
     }
   }
 
@@ -204,146 +270,14 @@ class Cons : public Exp {
     return true;
   }
 
-  virtual Sexp car() const {
+  Sexp car() const override {
     return a_;
   }
 
-  virtual Sexp cdr() const {
+  Sexp cdr() const override {
     return b_;
   }
 };
-
-/*
-class BComb : public Exp {
-  Sexp a_;
-  Sexp b_;
-  Sexp c_;
-
- public:
-  BComb() {
-  }
-
-  BComb(Sexp a)
-      : a_(a) {
-  }
-
-  BComb(Sexp a, Sexp b)
-      : a_(a)
-      , b_(b) {
-  }
-
-  BComb(Sexp a, Sexp b, Sexp c)
-      : a_(a)
-      , b_(b)
-      , c_(c){
-  }
-
-  virtual ~BComb() {}
-
-  virtual Sexp bind(Sexp arg) {
-    if (!a_) {
-      return Sexp(new BComb(arg));
-    } else if (!b_) {
-      return Sexp(new BComb(a_, arg));
-    } else if (!c_) {
-      return Sexp(new BComb(a_, b_, arg));
-    } else {
-      return Exp::bind(arg);
-    }
-  }
-
-  virtual void print(std::ostream&os) const {
-    if (!a_) {
-      os << "BComb";
-    } else if (!b_) {
-      os << "BComb(" << *a_ << ")";
-    } else if (!b_) {
-      os << "BComb(" << *a_ << b_ << ")";
-    } else {
-      os << "BComb(" << *a_ << ", " << *b_ << ", " << *c_ << ")";
-    }
-  }
-
-  virtual Sexp eval() const {
-    Sexp a, b, c;
-    if (a_) {
-      a = a_->eval();
-    }
-    if (b_) {
-      b = b_->eval();
-    }
-    if (c_) {
-      c = c_->eval();
-    }
-
-    if (a && b && c) {
-      return ap(a_->eval(), ap(b_->eval(), c_->eval()))->eval();
-    }
-
-    return Sexp(new BComb(a, b, c));
-  }
-};
-
-class SComb : public Exp {
-  Sexp a_;
-  Sexp b_;
-  Sexp c_;
-
- public:
-  SComb() {
-  }
-
-  SComb(Sexp a)
-      : a_(a) {
-  }
-
-  SComb(Sexp a, Sexp b)
-      : a_(a)
-      , b_(b) {
-  }
-
-  SComb(Sexp a, Sexp b, Sexp c)
-      : a_(a)
-      , b_(b)
-      , c_(c){
-  }
-
-  virtual ~SComb() {}
-
-  virtual Sexp bind(Sexp arg) {
-    if (!a_) {
-      return Sexp(new SComb(arg));
-    } else if (!b_) {
-      return Sexp(new SComb(a_, arg));
-    } else if (!c_) {
-      return Sexp(new SComb(a_, b_, arg));
-    } else {
-      return Exp::bind(arg);
-    }
-  }
-
-  virtual void print(std::ostream&os) const {
-    if (!a_) {
-      os << "SComb";
-    } else if (!b_) {
-      os << "SComb(" << *a_ << ")";
-    } else if (!b_) {
-      os << "SComb(" << *a_ << b_ << ")";
-    } else {
-      os << "SComb(" << *a_ << ", " << *b_ << ", " << *c_ << ")";
-    }
-  }
-
-  virtual Sexp eval() const {
-    if (a_ && b_ && c_) {
-      Sexp l = ap(a_, c_);
-      Sexp r = ap(b_, c_);
-      return ap(l, r);
-    }
-    return Sexp(new SComb(a_, b_, c_));
-  }
-};
-*/
 
 class UnaryFunc : public Exp {
  public:
@@ -355,14 +289,15 @@ class UnaryFunc : public Exp {
       , body_(body){}
 
   virtual ~UnaryFunc() {
-    std::cerr << "uni destroyed: " << name_ << std::endl;
+    //std::cerr << "uni destroyed: " << name_ << std::endl;
   }
 
   virtual void print(std::ostream&os) const {
     os << name_;
   }
 
-  Sexp call(Sexp _this, const Sexp arg) const override {
+  Sexp call_(Sexp _this, const Sexp arg) const override {
+    std::cerr << "uni call: " << str(this) << std::endl;
     return body_(arg);
   }
 };
@@ -378,14 +313,16 @@ class BinaryFunc : public Exp {
       , body_(body){}
 
   virtual ~BinaryFunc() {
-    std::cerr << "bin destroyed: " << name_ << std::endl;
+    //std::cerr << "bin destroyed: " << name_ << std::endl;
   }
 
   virtual void print(std::ostream&os) const {
     os << name_;
   }
 
-  Sexp call(Sexp _this, const Sexp arg) const override {
+  Sexp call_(Sexp _this, const Sexp arg) const override {
+    std::cerr << "bin call: " << str(this) << "(" << str(arg) << ")" << std::endl;
+    
     std::string name = name_;
     return Sexp(
         new UnaryFunc(
@@ -416,7 +353,9 @@ class TriFunc : public Exp {
     os << name_;
   }
 
-  Sexp call(Sexp _this, const Sexp arg) const override {
+  Sexp call_(Sexp _this, const Sexp arg) const override {
+    std::cerr << "tri call: " << str(this) << std::endl;
+    
     std::string name = name_;
     return Sexp(
         new BinaryFunc(
