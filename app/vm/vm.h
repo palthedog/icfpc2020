@@ -45,10 +45,6 @@ class Exp {
     return false;
   }
 
-  virtual bool isCons() const {
-    return false;
-  }
-
   virtual Sexp car() const {
     std::cerr << "car not supported: " << *this << std::endl;
     exit(1);
@@ -101,6 +97,7 @@ inline Sexp call(Sexp e, Sexp a0, Sexp a1, Sexp a2) {
 }
 
 inline bint to_int(Sexp e) {
+  std::cout << "to_int: " << str(e) << std::endl;
   while (!e->isNum()) {
     //std::cerr << e << " is not num." << std::endl;
     Exp* ori = e.get();
@@ -190,9 +187,7 @@ class Ap : public Exp {
       return Sexp(new Ap(arg));
     }
     //std::cerr << "ap call: " << str(_this) << std::endl;
-    auto r = call(f_, arg);
-    //std::cerr << "result: " << r << std::endl;
-    return r;
+    return Sexp(new Ap(f_, arg));
   }
 };
 
@@ -206,24 +201,6 @@ inline Sexp ap(Sexp f) {
 
 inline Sexp ap() {
   return Sexp(new Ap());
-}
-
-class Nil : public Exp {
- public:
-  Nil() {
-  }
-
-  virtual void print(std::ostream&os) const {
-    os << "nil";
-  }
-
-  virtual bool isNil() const {
-    return true;
-  }
-};
-
-inline Sexp nil() {
-  return Sexp(new Nil());
 }
 
 class Num : public Exp {
@@ -251,6 +228,11 @@ class Num : public Exp {
   }
 };
 
+inline Sexp num(int n) {
+  return Sexp(new Num(n));
+}
+
+/*
 class Cons : public Exp {
   Sexp a_;
   Sexp b_;
@@ -302,6 +284,7 @@ class Cons : public Exp {
     return b_;
   }
 };
+*/
 
 class ModResult : public Exp {
   bint num_;
@@ -423,6 +406,57 @@ inline Sexp CreateTrue() {
 
 inline Sexp CreateFalse() {
   return ap(SComb(), CreateTrue());
+}
+
+class Nil : public Exp {
+ public:
+  Nil() {
+  }
+
+  virtual void print(std::ostream&os) const {
+    os << "nil";
+  }
+
+  virtual bool isNil() const {
+    return true;
+  }
+
+  Sexp call_(Sexp _this, const Sexp arg) const override {  
+    std::cerr << "nil(x0)" << std::endl;
+    return CreateTrue();
+  }
+};
+
+inline Sexp nil() {
+  return Sexp(new Nil());
+}
+
+inline Sexp Cons() {
+  return Sexp(new TriFunc(
+        "cons",
+        [](Sexp x0, Sexp x1, Sexp x2) {
+          return ap(ap(x2, x0), x1);
+        }));
+}
+
+inline Sexp Cons(Sexp x0, Sexp x1) {
+  return ap(ap(Cons(), x0), x1);
+}
+
+inline Sexp Vec(Sexp x0, Sexp x1) {
+  return Cons(x0, x1);
+}
+
+inline Sexp List() {
+  return nil();
+}
+
+inline Sexp List(Sexp x0) {
+  return ap(ap(Cons(), x0), nil());
+}
+
+inline Sexp List(Sexp x0, Sexp x1) {
+  return ap(ap(Cons(), x0), List(x1));
 }
 
 Sexp parse(VM*vm, std::istringstream& iss);

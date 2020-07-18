@@ -56,19 +56,19 @@ Sexp parse(VM*vm, istringstream& iss) {
     p = new TriFunc(
         "c",
         [](Sexp x0, Sexp x1, Sexp x2) {
-          cerr << "ccomb_impl" << endl;
           return eval(ap(ap(eval(x0), eval(x2)), eval(x1)));
         });
   } else if (token == "b") {
     p = new TriFunc(
         "b",
-        [](Sexp a, Sexp b, Sexp c) {
-          return eval(ap(eval(a), ap(eval(b), eval(c))));
+        [](Sexp x0, Sexp x1, Sexp x2) {
+          return eval(ap(eval(x0), ap(eval(x1), eval(x2))));
         });
   } else if (token == "s") {
     return SComb();
   } else if (token == "cons") {
-    p = new Cons();
+    //p = new Cons();
+    return Cons();
   } else if (token == "add") {
     p = new BinaryFunc(
         "add",
@@ -76,11 +76,17 @@ Sexp parse(VM*vm, istringstream& iss) {
   } else if (token == "eq") {
     p = new BinaryFunc(
         "eq",
-        [](Sexp a, Sexp b){ return (to_int(a) == to_int(b)) ? CreateTrue() : CreateFalse(); });
+        [](Sexp a, Sexp b){
+          cout << "eq: " << a << ", " << b << endl;
+          return (to_int(a) == to_int(b)) ? CreateTrue() : CreateFalse();
+        });
   } else if (token == "lt") {
     p = new BinaryFunc(
         "lt",
-        [](Sexp a, Sexp b){ return (to_int(a) < to_int(b)) ? CreateTrue() : CreateFalse(); });
+        [](Sexp a, Sexp b){
+          cout << "lt: " << a << ", " << b << endl;
+          return (to_int(a) < to_int(b)) ? CreateTrue() : CreateFalse();
+        });
   } else if (token == "t") {
     return CreateTrue();
   } else if (token == "f") {
@@ -113,18 +119,34 @@ Sexp parse(VM*vm, istringstream& iss) {
           return e->isNil() ? CreateTrue() : CreateFalse() ;
         });
   } else if (token == "car") {
+    /*
     p = new UnaryFunc(
         "car",
         [](Sexp a){
           auto e = eval(a);
           return e->isCons() ? e->car() : ap(e, CreateTrue());
         });
+    */
+    p = new UnaryFunc(
+        "car",
+        [](Sexp a){
+          auto e = eval(a);
+          return ap(a, CreateTrue());
+        });
   } else if (token == "cdr") {
+    /*
     p = new UnaryFunc(
         "cdr",
         [](Sexp a){
           auto e = eval(a);
           return e->isCons() ? e->cdr() : ap(e, CreateFalse()) ;
+        });
+    */
+    p = new UnaryFunc(
+        "cdr",
+        [](Sexp a){
+          auto e = eval(a);
+          return ap(a, CreateFalse());
         });
   } else if (token == "i") {
     p = new UnaryFunc(
@@ -220,7 +242,7 @@ Sexp VM::interact(
     Sexp vec) const {
   cerr << "vm.interact" << endl;
   Sexp p = eval(protocol(name));
-  return ap(::interact(), p);
+  return call(::interact(), p, state, vec);
 }
 
 Sexp VM::protocol(const string&name) const {

@@ -144,13 +144,20 @@ int runLocal(const string& path) {
   printMod("ap mod -2");
   printMod("ap mod 256");
   printMod("ap mod -256");
-  */  
+
+  printSexp("ap ap ap cons 2 1 add");
+  printSexp("ap car ap ap cons t f");
+  printSexp("ap car i");
+  printSexp("ap cdr i");
+  */
+
   VM vm(path);
-  cout << "Evaluate galaxy" << endl;
-  //auto p = vm.interact("galaxy", nil(), nil());
-  auto p = vm.protocol("galaxy");
+  //auto vec0 = 
+  auto p = vm.interact("galaxy", nil(), Vec(num(0), num(0)));
+  //auto p = vm.protocol("galaxy");
+  cout << "Start evaluating: " << p << endl;
   cout << "p = " << eval(p) << endl;
-  return 0;
+   return 0;
 }
 
 int communicate() {
