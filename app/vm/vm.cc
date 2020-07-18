@@ -77,14 +77,14 @@ Sexp parse(VM*vm, istringstream& iss) {
     p = new BinaryFunc(
         "eq",
         [](Sexp a, Sexp b){
-          cout << "eq: " << a << ", " << b << endl;
+          //cout << "eq: " << a << ", " << b << endl;
           return (to_int(a) == to_int(b)) ? CreateTrue() : CreateFalse();
         });
   } else if (token == "lt") {
     p = new BinaryFunc(
         "lt",
         [](Sexp a, Sexp b){
-          cout << "lt: " << a << ", " << b << endl;
+          //cout << "lt: " << a << ", " << b << endl;
           return (to_int(a) < to_int(b)) ? CreateTrue() : CreateFalse();
         });
   } else if (token == "t") {
@@ -265,13 +265,11 @@ Sexp VM::function(int index) const {
 
 Sexp Function::call_(Sexp _this, Sexp arg) const{
   auto f = vm_->function(index_);
-  //cout << "func.call: " << f << ", arg: " << arg << endl;
   return call(f, eval(arg));
 }
 
 Sexp Function::eval_(Sexp _this) const{
   auto f = vm_->function(index_);
-  //cout << "func.eval: " << f << endl;
   return eval(f);
 }
 

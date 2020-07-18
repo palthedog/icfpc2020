@@ -85,6 +85,7 @@ inline Sexp eval(Sexp e) {
 }
 
 inline Sexp call(Sexp e, Sexp arg) {
+  //std::cout << "call: " << str(e) << std::endl;
   return e->call_(e, arg);
 }
 
@@ -97,7 +98,7 @@ inline Sexp call(Sexp e, Sexp a0, Sexp a1, Sexp a2) {
 }
 
 inline bint to_int(Sexp e) {
-  std::cout << "to_int: " << str(e) << std::endl;
+  //std::cout << "to_int: " << str(e) << std::endl;
   while (!e->isNum()) {
     //std::cerr << e << " is not num." << std::endl;
     Exp* ori = e.get();
@@ -174,9 +175,9 @@ class Ap : public Exp {
   }
 
   Sexp eval_(Sexp _this) const override{
-    std::cerr << "ap eval: " << str(_this) << std::endl;
+    //std::cerr << "ap eval: " << str(_this) << std::endl;
     if (f_ && arg_) {
-      std::cerr << str(f_) << ", " << str(arg_) << std::endl;
+      //std::cerr << str(f_) << ", " << str(arg_) << std::endl;
       return call(eval(f_), arg_);
     }
     return Exp::eval_(_this);
@@ -320,7 +321,7 @@ class UnaryFunc : public Exp {
   }
 
   Sexp call_(Sexp _this, const Sexp arg) const override {
-    std::cerr << "uni call: " << str(this) << std::endl;
+    //std::cerr << "uni call: " << str(this) << std::endl;
     return body_(arg);
   }
 };
@@ -343,7 +344,7 @@ class BinaryFunc : public Exp {
   }
 
   Sexp call_(Sexp _this, const Sexp arg) const override {
-    std::cerr << "bin call: " << str(this) << "(" << str(arg) << ")" << std::endl;
+    //std::cerr << "bin call: " << str(this) << "(" << str(arg) << ")" << std::endl;
     
     std::string name = name_;
     return Sexp(
@@ -376,7 +377,7 @@ class TriFunc : public Exp {
   }
 
   Sexp call_(Sexp _this, const Sexp arg) const override {
-    std::cerr << "tri call: " << str(this) << std::endl;
+    //std::cerr << "tri call: " << str(this) << std::endl;
     
     std::string name = name_;
     return Sexp(
@@ -422,7 +423,7 @@ class Nil : public Exp {
   }
 
   Sexp call_(Sexp _this, const Sexp arg) const override {  
-    std::cerr << "nil(x0)" << std::endl;
+    //std::cerr << "nil(x0)" << std::endl;
     return CreateTrue();
   }
 };
