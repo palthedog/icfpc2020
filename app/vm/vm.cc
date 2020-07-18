@@ -3,6 +3,7 @@
 #include <tuple>
 
 #include <types.h>
+#include <send.h>
 
 #include "vm.h"
 
@@ -26,11 +27,12 @@ Sexp send() {
   return Sexp(new UnaryFunc(
       "send",
       [](Sexp a) {
-        Sexp sendData = eval(call(Mod(), a));
-        cerr << "send: " << sendData << endl;
-        // TODO
-        exit(1);
-        return a;
+        Sexp s = eval(call(Mod(), a));
+        cerr << "send: " << s << endl;
+        string response = sendData("/aliens/send",s->mod());
+        Sexp res = dem(response);
+        cerr << "resp: " << res << endl;
+        return res;
       }));
 }
 
@@ -88,7 +90,7 @@ Sexp parse(VM*vm, istringstream& iss) {
     p = new BinaryFunc(
         "lt",
         [](Sexp a, Sexp b){
-          //cout << "lt: " << a << ", " << b << endl;
+          cout << "lt: " << a << ", " << b << endl;
           return (to_int(a) < to_int(b)) ? CreateTrue() : CreateFalse();
         });
   } else if (token == "t") {
@@ -189,31 +191,58 @@ Sexp modem() {
   return Sexp(new UnaryFunc(
       "modem",
       [](Sexp x0) {
-        return ap(Dem(), ap(Mod(), x0));
+        return ap(Dem(), eval(ap(Mod(), x0)));
+      }));
+}
+
+Sexp multipledraw() {
+  return Sexp(new UnaryFunc(
+      "multipledraw",
+      [](Sexp x0) {
+        cerr << "TODO: multipledraw: " << eval(x0) << endl;
+        exit(1);
+        return nil();
       }));
 }
 
 Sexp f38() {
   return Sexp(new BinaryFunc(
       "f38",
+      [=](Sexp x2, Sexp x0) {
+        x2 = eval(x2);
+        x0 = eval(x0);
+        return eval(ap(ap(ap(
+            If0(),
+            ap(Car(), x0)),
+                          List(eval(ap(modem(), ap(Car(), ap(Cdr(), x0)))),
+                               eval(ap(multipledraw(), ap(Car(), ap(Cdr(), ap(Cdr(), x0))))))),
+                       ap(ap(ap(interact(), x2), ap(modem(), ap(Car(), ap(Cdr(), x0)))),
+                          ap(send(), ap(Car(), ap(Cdr(), ap(Cdr(), x0)))))));
+      }));
+        /*
       [=](Sexp p, Sexp a) {
         cerr << "Arg: " << a << endl;
         Sexp flag = call(Car(), a);
         Sexp newState = call(Car(), call(Cdr(), a));
-        Sexp data = call(Cdr(), call(Cdr(), a));
+        Sexp data = call(Car(), call(Cdr(), call(Cdr(), a)));
         cerr << "Flag: " << to_int(flag) << endl;
         if (flag == 0) {
           // modem
-          cerr << "f38 -> modem" << endl;
+          cerr << "f38 -> draw" << endl;
           exit(1);
+          return Sexp(new Nil());
         } else {
           cerr << "f38 -> interact" << endl;
           cerr << "newState: " << str(newState) << endl;
           cerr << "data: " << str(data) << endl;
-          call(interact(), p, call(modem(), newState), call(send(), data));
+          Sexp m_newState = call(modem(), newState);
+          cerr << "Newstate: " << m_newState << endl;
+          Sexp response = call(send(), data);
+          cerr << "Response: " << response << endl;
+          return call(interact(), p, m_newState, response);
         }
-        return Sexp(new Nil());
       }));
+        */
 }
 
 Sexp interact() {
@@ -269,7 +298,8 @@ Sexp Function::eval_(Sexp _this) const{
 }
 
 std::string modNum(bint num) {
-  cerr << "mod(" << num << ")" << endl;
+  cerr << "modNum(" << num << ")" << endl;
+  
   string s;
   if (num >= 0) {
     s = "01";
@@ -288,11 +318,11 @@ std::string modNum(bint num) {
     breal width_r = (bits_r / 4) + 1;
     width = (int) width_r;
     bits = (int) bits;
-    cerr << "raw bits: " << bits_r << endl;
+    //cerr << "raw bits: " << bits_r << endl;
   }
-
+  
   bits = width * 4;
-  cerr << "bits: " << bits << ", width: " << width << endl;
+  //cerr << "bits: " << bits << ", width: " << width << endl;
   for (int i = 0; i < width; i++) {
     s += '1';
   }
@@ -310,6 +340,7 @@ std::string modNum(bint num) {
 
 std::string modImpl(Sexp e) {
   e = eval(e);
+  cerr << "mod: " << e << endl;
   if (e->isNum()) {
     return modNum(to_int(e));
   }
@@ -324,7 +355,7 @@ std::string modImpl(Sexp e) {
 }
 
 tuple<Sexp, string> demElem(string s) {
-  cerr << "demElem: " << s << endl;
+  //cerr << "demElem: " << s << endl;
 
   // number
   string h = s.substr(0, 2);
@@ -332,6 +363,7 @@ tuple<Sexp, string> demElem(string s) {
 
   if (h == "00") {
     // nil;
+    //cerr << "nil" << endl;
     return forward_as_tuple(nil(), tail);
   }
 
@@ -341,12 +373,12 @@ tuple<Sexp, string> demElem(string s) {
     width++;
   }
   int bits = width * 4;
-  cerr << "width: " << width << ", bits: " << bits << endl;
+  //cerr << "width: " << width << ", bits: " << bits << endl;
   tail = tail.substr(width + 1); // +1 for last '0'
-  cerr << "tail: " << tail << endl;
+  //cerr << "tail: " << tail << endl;
   
   string numStr = tail.substr(0, bits);
-  cerr << "numStr: " << numStr << endl;
+  //cerr << "numStr: " << numStr << endl;
   
   bint n = 0;
   if (numStr != "") {
@@ -358,8 +390,8 @@ tuple<Sexp, string> demElem(string s) {
   return forward_as_tuple(num(n), tail.substr(bits));
 }
   
-Sexp demImpl(string s) {
-  cerr << "dem: " << s << endl;
+tuple<Sexp, string> demImpl(string s) {
+  //cerr << "dem: " << s << endl;
 
   string h = s.substr(0, 2);
   string tail;
@@ -368,24 +400,36 @@ Sexp demImpl(string s) {
     // cons
     Sexp hExp;
     tail = s.substr(2);
-    tie(hExp, tail) = demElem(tail);
-    cerr << "cons(" << hExp << " ..." << endl;
-    return call(Cons(), hExp, demImpl(tail));
+    tie(hExp, tail) = demImpl(tail);
+    //cerr << "cons(" << hExp << " ..." << endl;
+
+    Sexp tailExp;
+    tie(tailExp, tail) = demImpl(tail);
+    return forward_as_tuple(call(Cons(), hExp, tailExp), tail);
   }
 
   Sexp numExp;
   tie(numExp, tail) = demElem(s);
+  return forward_as_tuple(numExp, tail);
+}
+
+Sexp dem(std::string s) {
+  Sexp exp;
+  string tail;
+  tie(exp, tail) = demImpl(s);
   if (tail != "") {
     cerr << "Tail should be empty but: " << tail <<endl;
     exit(1);
   }
-  return numExp;
+  cerr << "dem result: " << exp << endl;
+  return exp;
 }
 
 Sexp Dem() {
   return Sexp(new UnaryFunc(
       "dem",
       [](Sexp a) {
-        return demImpl(eval(a)->mod());
+        Sexp exp = dem(eval(a)->mod());
+        return exp;
       }));
 }

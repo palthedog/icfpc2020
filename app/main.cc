@@ -42,7 +42,7 @@ bool parseArgv(int argc, char**argv) {
   return true;
 }
 
-bool post(const string&path, const string& body) {
+string post(const string&path, const string& body) {
 	shared_ptr<httplib::Client> pclient;
   if (https) {
     pclient.reset((httplib::Client*) new httplib::SSLClient(serverName, serverPort));
@@ -58,17 +58,23 @@ bool post(const string&path, const string& body) {
 
 	if (!serverResponse) {
 		std::cout << "Unexpected server response:\nNo response from server" << std::endl;
-		return false;
+    exit(1);
+		return "";
 	}
 	
 	if (serverResponse->status != 200) {
 		std::cout << "Unexpected server response:\nHTTP code: " << serverResponse->status
 		          << "\nResponse body: " << serverResponse->body << std::endl;
-		return false;
+    exit(1);
+		return "";
 	}
 
 	std::cout << "Server response: " << serverResponse->body << std::endl;
-	return true;
+	return serverResponse->body;
+}
+
+std::string sendData(const std::string& path, const std::string& payload) {
+  return post(path, payload);
 }
 
 void printNum(bint num) {
@@ -177,8 +183,15 @@ int runLocal(const string& path) {
   printSexp("ap dem ap mod ap ap cons 0 nil");
   printSexp("ap dem ap mod ap ap cons 1 2");
   printSexp("ap dem ap mod ap ap cons 1 ap ap cons 2 nil");
-  
-  /*  
+
+  printSexp("ap dem ap mod ap ap cons 1 ap ap cons 2 nil");
+
+  cerr << call(Mod(), List(num(1), num(2))) << endl;
+  cerr << call(Dem(), call(Mod(), List(num(1), num(2)))) << endl;
+
+  cerr << call(Mod(), List(num(1), List(num(2), num(3)), num(4))) << endl;
+  cerr << call(Dem(), call(Mod(), List(num(1), List(num(2), num(3)), num(4)))) << endl;
+
   VM vm(path);
   //auto vec0 = 
   //Sexp p = vm.protocol("galaxy");
@@ -186,7 +199,6 @@ int runLocal(const string& path) {
   // Sexp p = vm.function(1141);
   cout << "Start evaluating: " << str(p) << endl;
   cout << "p = " << eval(p) << endl;
-  */
   return 0;
 }
 
@@ -196,8 +208,9 @@ int communicate() {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 2) {
-    return runLocal(argv[1]);
+  if (argc == 4) {
+    parseArgv(argc, argv);
+    return runLocal(argv[3]);
   }
 
   serverUrl = argv[1];

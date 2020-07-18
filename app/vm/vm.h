@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <tuple>
 
 #include <memory>
 
@@ -371,6 +372,9 @@ inline Sexp Cons() {
   return Sexp(new TriFunc(
         "cons",
         [](Sexp x0, Sexp x1, Sexp x2) {
+          x0 = eval(x0);
+          x1 = eval(x1);
+          x2 = eval(x2);
           return ap(ap(x2, x0), x1);
         }));
 }
@@ -393,6 +397,10 @@ inline Sexp List(Sexp x0) {
 
 inline Sexp List(Sexp x0, Sexp x1) {
   return ap(ap(Cons(), x0), List(x1));
+}
+
+inline Sexp List(Sexp x0, Sexp x1, Sexp x2) {
+  return ap(ap(Cons(), x0), List(x1, x2));
 }
 
 inline Sexp Car() {
@@ -418,7 +426,11 @@ inline Sexp If0() {
       "if0",
       [](Sexp c, Sexp a, Sexp b){
         bint e = to_int(c);
-        return e == 0 ? a : b;
+        if (e == 0) {
+          return eval(a);
+        } else {
+          return eval(b);
+        }
       }));
 }
 
@@ -433,6 +445,8 @@ inline Sexp Mod() {
 }
 
 Sexp Dem();
+Sexp dem(std::string s);
+std::tuple<Sexp, std::string> demImpl(std::string s);
 
 Sexp parse(VM*vm, std::istringstream& iss);
 
