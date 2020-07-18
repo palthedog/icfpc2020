@@ -111,8 +111,12 @@ int runLocal(const string& path) {
   printSexp("ap ap ap s add inc 1");
   printSexp("ap ap ap s mul ap add 1 6");
 
+  printSexp("ap car ap ap cons 3 1");
+  printSexp("ap car 3");
   
-  VM vm(path);
+
+  
+  //VM vm(path);
   
   return 0;
 }

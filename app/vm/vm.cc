@@ -40,6 +40,10 @@ Sexp parse(istringstream& iss, bool lhs) {
     p = new BinaryFunc(
         "sum",
         [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() + b->to_int())); });
+  } else if (token == "t") {
+    return CreateTrue();
+  } else if (token == "t") {
+    return CreateFalse();
   } else if (token == "mul") {
     p = new BinaryFunc(
         "mul",
@@ -56,6 +60,10 @@ Sexp parse(istringstream& iss, bool lhs) {
     p = new UnaryFunc(
         "neg",
         [](Sexp a){ return Sexp(new Num(-a->to_int())); });
+  } else if (token == "isnil") {
+    p = new UnaryFunc(
+        "isnil",
+        [](Sexp a){ return a->isNil() ? CreateTrue() : CreateFalse() ; });
   } else if (token == "nil") {
     p = new Nil();
   } else if (token[0] >= '0' && token[0] <= '9') {

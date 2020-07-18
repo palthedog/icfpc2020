@@ -30,11 +30,16 @@ class Exp {
     std::cerr << "eval not supported: " << *this << std::endl;
     exit(1);
   }
+
+  virtual bool isNil() const {
+    return false;
+  }
   
   virtual void print(std::ostream&os) const = 0;
 
   friend std::ostream& operator<<(std::ostream&os, const Exp&e);
 };
+
 inline std::ostream& operator<<(std::ostream&os, const Exp&e) {
   e.print(os);
   return os;
@@ -141,6 +146,10 @@ class Nil : public Exp {
 
   virtual Sexp eval() const {
     return Sexp(new Nil());
+  }
+
+  virtual bool isNil() const {
+    return true;
   }
 };
 
@@ -481,6 +490,16 @@ class BinaryFunc : public Exp {
   }
 
 };
+
+inline Sexp CreateTrue() {
+  return Sexp(new BinaryFunc(
+      "t",
+      [](Sexp a, Sexp b){ return a; }));
+}
+
+inline Sexp CreateFalse() {
+  return ap(Sexp(new SComb()), CreateTrue());
+}
 
 class UnaryFunc : public Exp {
  public:
