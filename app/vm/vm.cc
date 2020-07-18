@@ -21,9 +21,11 @@ std::string str(const Exp* e) {
   return oss.str();
 }
 
-Sexp ccomb_impl(Sexp x0, Sexp x1, Sexp x2) {
-  cerr << "ccomb_impl" << endl;
-  return ap(ap(x0, x2), x1);
+Sexp send_impl(Sexp l) {
+  cerr << "send_impl: " << l << endl;
+  // TODO
+  exit(1);
+  return Sexp(new Nil());;
 }
 
 Sexp parse(VM*vm, istringstream& iss) {
@@ -46,15 +48,22 @@ Sexp parse(VM*vm, istringstream& iss) {
       return ap(f);
     }
     return ap(f, arg);
+  } else if (token == "send") {
+    p = new UnaryFunc(
+        "send",
+        send_impl);
   } else if (token == "c") {
     p = new TriFunc(
         "c",
-        ccomb_impl);
+        [](Sexp x0, Sexp x1, Sexp x2) {
+          cerr << "ccomb_impl" << endl;
+          return eval(ap(ap(eval(x0), eval(x2)), eval(x1)));
+        });
   } else if (token == "b") {
     p = new TriFunc(
         "b",
         [](Sexp a, Sexp b, Sexp c) {
-          return ap(a, ap(b, c));
+          return eval(ap(eval(a), ap(eval(b), eval(c))));
         });
   } else if (token == "s") {
     return SComb();
@@ -174,6 +183,46 @@ VM::VM(const string&path) {
   }
 }
 
+Sexp interact();
+
+Sexp f38() {
+  return Sexp(new BinaryFunc(
+      "f38",
+      [=](Sexp p, Sexp a) {
+        auto e = eval(a);
+        cerr << "Arg: " << e << endl;
+        auto flag = e->car();
+        auto newState = e->cdr()->car();
+        auto data = e->cdr()->cdr()->car();
+        if (to_int(a->car()) == 0) {
+          // modem
+          cerr << "f38 -> modem" << endl;
+        } else {
+          //interact(p, 
+          cerr << "i38 -> nteract" << endl;
+        }
+        return Sexp(new Nil());
+      }));
+}
+
+Sexp interact() {
+  return Sexp(new TriFunc(
+      "interact",
+      [=](Sexp p, Sexp s, Sexp v) {
+        cerr << "in interact" << endl;
+        return call(f38(), p, call(p, s, v));
+      }));
+}
+
+Sexp VM::interact(
+    const string&name,
+    Sexp state,
+    Sexp vec) const {
+  cerr << "vm.interact" << endl;
+  Sexp p = eval(protocol(name));
+  return ap(::interact(), p);
+}
+
 Sexp VM::protocol(const string&name) const {
   auto f = protocols_.find(name);
   if (f == protocols_.end()) {
@@ -195,7 +244,7 @@ Sexp VM::function(int index) const {
 Sexp Function::call_(Sexp _this, Sexp arg) const{
   auto f = vm_->function(index_);
   //cout << "func.call: " << f << ", arg: " << arg << endl;
-  return call(f, arg);
+  return call(f, eval(arg));
 }
 
 Sexp Function::eval_(Sexp _this) const{

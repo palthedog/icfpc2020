@@ -119,7 +119,13 @@ int runLocal(const string& path) {
   printSexp("ap ap ap c add 1 2");
   printSexp("ap ap ap b inc dec 3");
   printSexp("ap ap ap s add inc 1");
+
   printSexp("ap ap ap s mul ap add 1 6");
+
+  printSexp("ap ap t 1 5");
+  printSexp("ap ap t t i");
+  printSexp("ap ap t t ap inc 5");
+  printSexp("ap ap t ap inc 5 t");
 
   printSexp("ap car ap ap cons 3 1");
   printSexp("ap car i");  // t
@@ -131,12 +137,6 @@ int runLocal(const string& path) {
 
   printSexp("ap ap f 42 0");
 
-  
-  VM vm(path);
-  cout << "Evaluate galaxy" << endl;
-  auto p = vm.protocol("galaxy");
-  cout << "galaxy = " << eval(p) << endl;
-  */
   printMod("ap mod 0");
   printMod("ap mod 1");
   printMod("ap mod -1");
@@ -144,6 +144,12 @@ int runLocal(const string& path) {
   printMod("ap mod -2");
   printMod("ap mod 256");
   printMod("ap mod -256");
+  */  
+  VM vm(path);
+  cout << "Evaluate galaxy" << endl;
+  //auto p = vm.interact("galaxy", nil(), nil());
+  auto p = vm.protocol("galaxy");
+  cout << "p = " << eval(p) << endl;
   return 0;
 }
 

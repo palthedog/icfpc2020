@@ -17,6 +17,8 @@ typedef std::shared_ptr<Exp> Sexp;
 std::string str(const Sexp e);
 std::string str(const Exp* e);
 
+Sexp ap(Sexp f, Sexp a);
+
 class Exp {
  public:
   virtual ~Exp() {}
@@ -61,6 +63,11 @@ class Exp {
     std::cerr << "mod not supported: " << *this << std::endl;
     exit(1);
   }
+
+  virtual std::string dem() const {
+    std::cerr << "dem not supported: " << *this << std::endl;
+    exit(1);
+  }
   
   virtual void print(std::ostream&os) const = 0;
 
@@ -85,6 +92,14 @@ inline Sexp call(Sexp e, Sexp arg) {
   return e->call_(e, arg);
 }
 
+inline Sexp call(Sexp e, Sexp a0, Sexp a1) {
+  return call(call(e, a0), a1);
+}
+
+inline Sexp call(Sexp e, Sexp a0, Sexp a1, Sexp a2) {
+  return call(call(call(e, a0), a1), a2);
+}
+
 inline bint to_int(Sexp e) {
   while (!e->isNum()) {
     //std::cerr << e << " is not num." << std::endl;
@@ -93,7 +108,7 @@ inline bint to_int(Sexp e) {
     //std::cerr << "evaled: " << e << std::endl;
     if (ori == e.get()) {
       // not updated
-      std::cerr << "Failed to eval to int: " << e << std::endl;
+      std::cerr << "Failed to eval to int: " << str(e) << std::endl;
       exit(1);
     }
   }
@@ -206,6 +221,10 @@ class Nil : public Exp {
     return true;
   }
 };
+
+inline Sexp nil() {
+  return Sexp(new Nil());
+}
 
 class Num : public Exp {
   bint num_;
@@ -392,14 +411,14 @@ inline Sexp SComb() {
   return Sexp(new TriFunc(
       "s",
       [](Sexp a, Sexp b, Sexp c) {
-        return ap(ap(a, c), ap(b, c));
+        return ap(ap(eval(a), eval(c)), ap(eval(b), eval(c)));
       }));
 }
 
 inline Sexp CreateTrue() {
   return Sexp(new BinaryFunc(
       "t",
-      [](Sexp a, Sexp b){ return a; }));
+      [](Sexp a, Sexp b){ return eval(a); }));
 }
 
 inline Sexp CreateFalse() {
@@ -417,6 +436,7 @@ class VM {
  public:
   VM(const std::string&path);
 
+  Sexp interact(const std::string&name, Sexp state, Sexp vec) const;  
   Sexp protocol(const std::string&name) const;
   Sexp function(int index) const;
  private:
