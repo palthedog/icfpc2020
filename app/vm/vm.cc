@@ -162,17 +162,14 @@ VM::VM(const string&path) {
   int i = 0;
   string line;
   while (getline(ifs, line)) {
-    cout << (i++) << " line: " << line << endl;
-
     int p = line.find(" = ");
     const string l = line.substr(0, p);
     const string r = line.substr(p + 3);
 
-    cout << "LHS: " << l << endl;
-    
+    //cout << "LHS: " << l << endl;
 
     Sexp rhs = parse(this, r);
-    cout << "RHS: " << *rhs << endl;
+    //cout << "RHS: " << *rhs << endl;
 
     if (l[0] == ':') {
       // function
@@ -199,7 +196,16 @@ Sexp draw() {
   return Sexp(new UnaryFunc(
       "draw",
       [](Sexp x0) {
-        cerr << "TODO: draw: " << x0 << endl;
+        x0 = eval(x0);
+         while (!x0->isNil()) {
+           Sexp h = eval(call(Car(), x0));
+           
+           Sexp x = eval(call(Car(), h));
+           Sexp y = eval(call(Cdr(), h));
+           cerr << "DRAW(" << x << ", " << y << ")" << endl;
+           
+           x0 = eval(call(Cdr(), x0));
+        }
         return nil();
       }));
 }
@@ -215,8 +221,11 @@ Sexp multipledraw() {
         }
 
         Sexp h = call(Car(), x0);
+        Sexp drawH = call(draw(), h);
+
         Sexp tail = call(Cdr(), x0);
-        return call(Cons(), call(draw(), h), call(multipledraw(), tail));
+        Sexp multiDraw = eval(call(multipledraw(), tail));
+        return eval(ap(ap(Cons(), drawH), multiDraw));
       }));
 }
 
@@ -315,7 +324,7 @@ Sexp Function::eval_(Sexp _this) const{
 }
 
 std::string modNum(bint num) {
-  cerr << "modNum(" << num << ")" << endl;
+  // cerr << "modNum(" << num << ")" << endl;
   
   string s;
   if (num >= 0) {
