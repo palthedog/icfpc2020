@@ -203,7 +203,7 @@ int runLocal(const string& path) {
 }
 
 int communicate() {
-  post("/aliens/send", "110110000111011111100001001111110101000000");
+  post("/aliens/send", modImpl(num(0)));
   return 0;
 }
 
