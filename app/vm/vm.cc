@@ -90,7 +90,7 @@ Sexp parse(VM*vm, istringstream& iss) {
     p = new BinaryFunc(
         "lt",
         [](Sexp a, Sexp b){
-          cout << "lt: " << a << ", " << b << endl;
+          //cout << "lt: " << a << ", " << b << endl;
           return (to_int(a) < to_int(b)) ? CreateTrue() : CreateFalse();
         });
   } else if (token == "t") {
@@ -195,19 +195,35 @@ Sexp modem() {
       }));
 }
 
+Sexp draw() {
+  return Sexp(new UnaryFunc(
+      "draw",
+      [](Sexp x0) {
+        cerr << "TODO: draw: " << x0 << endl;
+        return nil();
+      }));
+}
+
 Sexp multipledraw() {
   return Sexp(new UnaryFunc(
       "multipledraw",
       [](Sexp x0) {
-        cerr << "TODO: multipledraw: " << eval(x0) << endl;
-        exit(1);
-        return nil();
+        cerr << "multipledraw: " << x0 << endl;
+        x0 = eval(x0);
+        if (x0->isNil()) {
+          return nil();
+        }
+
+        Sexp h = call(Car(), x0);
+        Sexp tail = call(Cdr(), x0);
+        return call(Cons(), call(draw(), h), call(multipledraw(), tail));
       }));
 }
 
 Sexp f38() {
   return Sexp(new BinaryFunc(
       "f38",
+      /*
       [=](Sexp x2, Sexp x0) {
         x2 = eval(x2);
         x0 = eval(x0);
@@ -215,22 +231,23 @@ Sexp f38() {
             If0(),
             ap(Car(), x0)),
                           List(eval(ap(modem(), ap(Car(), ap(Cdr(), x0)))),
-                               eval(ap(multipledraw(), ap(Car(), ap(Cdr(), ap(Cdr(), x0))))))),
-                       ap(ap(ap(interact(), x2), ap(modem(), ap(Car(), ap(Cdr(), x0)))),
+                          eval(ap(multipledraw(), ap(Car(), ap(Cdr(), ap(Cdr(), x0))))))),
+                          ap(ap(ap(interact(), x2), ap(modem(), ap(Car(), ap(Cdr(), x0)))),
                           ap(send(), ap(Car(), ap(Cdr(), ap(Cdr(), x0)))))));
       }));
-        /*
+      /*/
       [=](Sexp p, Sexp a) {
         cerr << "Arg: " << a << endl;
         Sexp flag = call(Car(), a);
         Sexp newState = call(Car(), call(Cdr(), a));
         Sexp data = call(Car(), call(Cdr(), call(Cdr(), a)));
-        cerr << "Flag: " << to_int(flag) << endl;
-        if (flag == 0) {
+
+        bint intFlag = to_int(flag);
+        cerr << "Flag: " << intFlag << endl;
+        if (intFlag == 0) {
           // modem
-          cerr << "f38 -> draw" << endl;
-          exit(1);
-          return Sexp(new Nil());
+          cerr << "f38 -> draw: " << data << endl;
+          return List(eval(call(modem(), newState)), call(multipledraw(), data));
         } else {
           cerr << "f38 -> interact" << endl;
           cerr << "newState: " << str(newState) << endl;
@@ -242,7 +259,7 @@ Sexp f38() {
           return call(interact(), p, m_newState, response);
         }
       }));
-        */
+  //*/
 }
 
 Sexp interact() {
@@ -340,7 +357,7 @@ std::string modNum(bint num) {
 
 std::string modImpl(Sexp e) {
   e = eval(e);
-  cerr << "mod: " << e << endl;
+  //cerr << "mod: " << e << endl;
   if (e->isNum()) {
     return modNum(to_int(e));
   }
@@ -421,7 +438,7 @@ Sexp dem(std::string s) {
     cerr << "Tail should be empty but: " << tail <<endl;
     exit(1);
   }
-  cerr << "dem result: " << exp << endl;
+  //cerr << "dem result: " << exp << endl;
   return exp;
 }
 
