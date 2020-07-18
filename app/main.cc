@@ -79,7 +79,7 @@ void printSexp(const string& str) {
   cout << "Input: " << str << endl;
   Sexp sexp = parse(nullptr, str);
   cout << "Parsed: " << sexp << endl;
-  cout << "Eval: " << sexp->eval() << endl;
+  cout << "Eval: " << sexp << endl;
 }
 
 int runLocal(const string& path) {
@@ -104,8 +104,8 @@ int runLocal(const string& path) {
   cerr << decode("1101000") << endl;
   */
 
-  printSexp("ap ap add 1 2");
-  printSexp("ap ap ap cons 1 2 add");
+  //printSexp("ap ap add 1 2");
+  //printSexp("ap ap ap cons 1 2 add");
   printSexp("ap ap ap c add 1 2");
   printSexp("ap ap ap b inc dec 3");
   printSexp("ap ap ap s add inc 1");
@@ -122,7 +122,7 @@ int runLocal(const string& path) {
   
   VM vm(path);
   cout << "Evaluate galaxy" << endl;
-  cout << vm.protocol("galaxy")->eval() << endl;
+  cout << vm.protocol("galaxy") << endl;
   
   return 0;
 }

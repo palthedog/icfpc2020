@@ -5,6 +5,23 @@
 
 using namespace std;
 
+std::string str(const Sexp e) {
+  ostringstream oss;
+  e->print(oss);
+  return oss.str();
+}
+
+std::string str(const Exp* e) {
+  ostringstream oss;
+  e->print(oss);
+  return oss.str();
+}
+
+Sexp ccomb_impl(Sexp x0, Sexp x1, Sexp x2) {
+  cerr << "ccomb_impl" << endl;
+  return ap(ap(x0, x2), x1);
+}
+
 Sexp parse(VM*vm, istringstream& iss) {
   string token;
   if (!getline(iss, token, ' ')) {
@@ -15,39 +32,42 @@ Sexp parse(VM*vm, istringstream& iss) {
   if (token[0] == ':') {
     p = new Function(vm, token);
   } else if (token == "ap") {
-    Sexp ap(new Ap());
-
     Sexp f = parse(vm, iss);
     if (!f) {
-      return ap;
+      return ap();
     }
-    ap = ap->bind(f);
 
     Sexp arg = parse(vm, iss);
     if (!arg) {
-      return ap;
+      return ap(f);
     }
-    return ap->bind(arg);
+    return ap(f, arg);
   } else if (token == "c") {
-    p = new CComb();
+    p = new TriFunc(
+        "c",
+        ccomb_impl);
   } else if (token == "b") {
-    p = new BComb();
+    p = new TriFunc(
+        "b",
+        [](Sexp a, Sexp b, Sexp c) {
+          return ap(a, ap(b, c));
+        });
   } else if (token == "s") {
-    p = new SComb();
+    return SComb();
   } else if (token == "cons") {
     p = new Cons();
   } else if (token == "add") {
     p = new BinaryFunc(
-        "sum",
+        "add",
         [](Sexp a, Sexp b){ return Sexp(new Num(a->to_int() + b->to_int())); });
   } else if (token == "eq") {
     p = new BinaryFunc(
         "eq",
-        [](Sexp a, Sexp b){ return (a->eval()->to_int() == b->eval()->to_int()) ? CreateTrue() : CreateFalse(); });
+        [](Sexp a, Sexp b){ return (a->to_int() == b->to_int()) ? CreateTrue() : CreateFalse(); });
   } else if (token == "lt") {
     p = new BinaryFunc(
         "lt",
-        [](Sexp a, Sexp b){ return (a->to_int() < b->eval()->to_int()) ? CreateTrue() : CreateFalse(); });
+        [](Sexp a, Sexp b){ return (a->to_int() < b->to_int()) ? CreateTrue() : CreateFalse(); });
   } else if (token == "t") {
     return CreateTrue();
   } else if (token == "f") {
@@ -151,6 +171,8 @@ Sexp VM::function(int index) const {
   return f->second;
 }
 
-Sexp Function::eval() const {
-  return vm_->function(x_)->eval();
+Sexp Function::call(Sexp _this, Sexp arg) const{
+  auto f = vm_->function(index_);
+  cout << "func.call: " << f << ", arg: " << arg << endl;
+  return f->call(f, arg);
 }

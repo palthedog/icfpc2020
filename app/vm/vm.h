@@ -14,21 +14,20 @@ class VM;
 class Exp;
 typedef std::shared_ptr<Exp> Sexp;
 
+std::string str(const Sexp e);
+std::string str(const Exp* e);
+
 class Exp {
  public:
   virtual ~Exp() {}
   
-  virtual Sexp bind(std::shared_ptr<Exp> a) {
-    std::cerr << "Bind not supported: " << *this << ".bind(" << *a <<  ")" << std::endl;
+  virtual Sexp call(Sexp _this, const Sexp a) const {
+    std::cerr << "call not supported: " << *this << "; arg: " << *a << std::endl;
     exit(1);
   }
 
   virtual bint to_int() const {
-    return this->eval()->to_int();
-  }
-
-  virtual Sexp eval() const {
-    std::cerr << "eval not supported: " << *this << std::endl;
+    std::cerr << "to_int not supported: " << *this << std::endl;
     exit(1);
   }
 
@@ -66,25 +65,24 @@ inline std::ostream& operator<<(std::ostream&os, const Sexp& e) {
 
 class Function : public Exp {
  private:
-  int x_;
+  int index_;
   VM* vm_;
 
  public:
   Function(VM*vm, const std::string& token) {
     vm_ = vm;
-    x_ = std::stoi(token.substr(1));
+    index_ = std::stoi(token.substr(1));
   }
 
-  virtual void print(std::ostream&os) const {
-    os << ":" << x_;
+  void print(std::ostream&os) const override {
+    os << ":" << index_;
   }
 
-  virtual Sexp eval() const;
+  Sexp call(Sexp _this, Sexp arg) const override;
 };
 
 class Ap : public Exp {
   Sexp f_;
-  Sexp arg_;
   
  public:
   Ap()
@@ -95,46 +93,37 @@ class Ap : public Exp {
       : f_(f) {
   }
   
-  Ap(Sexp f, Sexp arg)
-      : f_(f)
-      , arg_(arg) {
+  virtual ~Ap() {
+    std::cerr << "ap destroyed: " << str(this) << std::endl;
   }
 
-  virtual ~Ap() {}
-
-  virtual void print(std::ostream&os) const {
+  void print(std::ostream&os) const override {
     os << "ap";
     if (f_) {
-      os << "(" << f_ << ")";
-    }
-    if (arg_) {
-      os << "(" << arg_ << ")";
+      os << "(" << f_ << ", )";
     }
   }
 
-  virtual Sexp eval() const {
-    if (f_ && arg_) {
-      return f_->bind(arg_)->eval();
-    }
-    if (f_) {
-      return Sexp(new Ap(f_));
-    }
-    return Sexp(new Ap());
-  }
-
-  virtual Sexp bind(std::shared_ptr<Exp> arg) {
+  Sexp call(Sexp _this, const Sexp arg) const override {
     if (!f_) {
       return Sexp(new Ap(arg));
     }
-    if (!arg_) {
-      return Sexp(new Ap(f_, arg));
-    }
-    return Exp::bind(arg);
+    std::cerr << "call: " << f_ << std::endl;
+    return f_->call(f_, arg);
   }
 };
 
 inline Sexp ap(Sexp f, Sexp a) {
-  return Sexp(new Ap(f, a));
+  std::cout << "ap: " << str(f) << ", " << str(a) << std::endl;
+  return f->call(f, a);
+}
+
+inline Sexp ap(Sexp f) {
+  return Sexp(new Ap(f));
+}
+
+inline Sexp ap() {
+  return Sexp(new Ap());
 }
 
 class Nil : public Exp {
@@ -144,10 +133,6 @@ class Nil : public Exp {
 
   virtual void print(std::ostream&os) const {
     os << "nil";
-  }
-
-  virtual Sexp eval() const {
-    return Sexp(new Nil());
   }
 
   virtual bool isNil() const {
@@ -169,10 +154,6 @@ class Num : public Exp {
 
   virtual void print(std::ostream&os) const {
     os << num_;
-  }
-
-  virtual Sexp eval() const {
-    return Sexp(new Num(num_));
   }
 
   virtual bint to_int() const {
@@ -199,28 +180,16 @@ class Cons : public Exp {
 
   virtual ~Cons() {}
 
-  virtual Sexp bind(Sexp arg) {
+  virtual Sexp call(Sexp _this, const Sexp arg) const override {
     if (!a_) {
       return Sexp(new Cons(arg));
     } else if (!b_) {
       return Sexp(new Cons(a_, arg));
     } else {
-      Sexp s(new Ap(arg, a_));
-      return Sexp(new Ap(s, b_));
+      return ap(ap(arg, a_), b_);
     }
   }
 
-  virtual Sexp eval() const {
-    Sexp a, b;
-    if (a_) {
-      a = a_->eval();
-    }
-    if (b_) {
-      b = b_->eval();
-    }
-    return Sexp(new Cons(a, b));
-  }
-  
   virtual void print(std::ostream&os) const {
     if (!a_) {
       os << "Cons(?, ?)";
@@ -244,64 +213,7 @@ class Cons : public Exp {
   }
 };
 
-class CComb : public Exp {
-  Sexp a_;
-  Sexp b_;
-  Sexp c_;
-
- public:
-  CComb() {
-  }
-
-  CComb(Sexp a)
-      : a_(a) {
-  }
-
-  CComb(Sexp a, Sexp b)
-      : a_(a)
-      , b_(b) {
-  }
-
-  CComb(Sexp a, Sexp b, Sexp c)
-      : a_(a)
-      , b_(b)
-      , c_(c){
-  }
-
-  virtual ~CComb() {}
-
-  virtual Sexp bind(Sexp arg) {
-    if (!a_) {
-      return Sexp(new CComb(arg));
-    } else if (!b_) {
-      return Sexp(new CComb(a_, arg));
-    } else if (!c_) {
-      return Sexp(new CComb(a_, b_, arg));
-    } else {
-      return Exp::bind(arg);
-    }
-  }
-
-  virtual void print(std::ostream&os) const {
-    if (!a_) {
-      os << "CComb";
-    } else if (!b_) {
-      os << "CComb(" << *a_ << ")";
-    } else if (!b_) {
-      os << "CComb(" << *a_ << b_ << ")";
-    } else {
-      os << "CComb(" << *a_ << ", " << *b_ << ", " << *c_ << ")";
-    }
-  }
-
-  virtual Sexp eval() const {
-    if (a_ && b_ && c_) {
-      return Sexp(new Ap(Sexp(new Ap(a_, c_)), b_))->eval();
-    }
-    return Sexp(new CComb(a_, b_, c_));
-  }
-};
-
+/*
 class BComb : public Exp {
   Sexp a_;
   Sexp b_;
@@ -431,123 +343,109 @@ class SComb : public Exp {
     return Sexp(new SComb(a_, b_, c_));
   }
 };
-
-class BinaryFunc : public Exp {
- public:
-  std::string name_;
-  std::function<Sexp(Sexp, Sexp)> body_;
-  Sexp a_;
-  Sexp b_;
-
-  BinaryFunc(std::string name, std::function<Sexp(Sexp, Sexp)> body)
-      : name_(name)
-      , body_(body){}
-
-  BinaryFunc(std::string name,
-             std::function<Sexp(Sexp, Sexp)> body,
-             Sexp a)
-      : name_(name)
-      , body_(body)
-      , a_(a) {
-  }
-
-  BinaryFunc(std::string name,
-             std::function<Sexp(Sexp, Sexp)> body,
-             Sexp a,
-             Sexp b)
-      : name_(name)
-      , body_(body)
-      , a_(a)
-      , b_(b){
-  }
-
-  virtual ~BinaryFunc() {}
-
-  virtual Sexp bind(Sexp arg) {
-    if (!a_) {
-      return Sexp(new BinaryFunc(name_, body_, arg));
-    } else if (!b_) {
-      return Sexp(new BinaryFunc(name_, body_, a_, arg));
-    }
-    return Exp::bind(arg);
-  }
-
-  virtual void print(std::ostream&os) const {
-    if (!a_) {
-      os << name_ << "()";
-    } else if (!b_) {
-      os << name_ << "(" << a_ << ")";
-    } else {
-      os << name_ << "(" << a_ << ", " << b_ << ")";
-    }
-  }
-
-  virtual Sexp eval() const {
-    if (a_ && b_) {
-      return body_(a_, b_)->eval();
-    }
-    if (a_) {
-      return Sexp(new BinaryFunc(name_, body_, a_));
-    }
-    return Sexp(new BinaryFunc(name_, body_));
-  }
-
-};
-
-inline Sexp CreateTrue() {
-  return Sexp(new BinaryFunc(
-      "t",
-      [](Sexp a, Sexp b){ return a->eval(); }));
-}
-
-inline Sexp CreateFalse() {
-  return ap(Sexp(new SComb()), CreateTrue());
-}
+*/
 
 class UnaryFunc : public Exp {
  public:
   std::string name_;
   std::function<Sexp(Sexp)> body_;
-  Sexp a_;
 
   UnaryFunc(std::string name, std::function<Sexp(Sexp)> body)
       : name_(name)
       , body_(body){}
 
-  UnaryFunc(std::string name,
-            std::function<Sexp(Sexp)> body,
-            Sexp a)
-      : name_(name)
-      , body_(body)
-      , a_(a) {
-  }
-
-  virtual ~UnaryFunc() {}
-
-  virtual Sexp bind(Sexp arg) {
-    if (!a_) {
-      return Sexp(new UnaryFunc(name_, body_, arg));
-    }
-    return Exp::bind(arg);
+  virtual ~UnaryFunc() {
+    std::cerr << "uni destroyed: " << name_ << std::endl;
   }
 
   virtual void print(std::ostream&os) const {
-    if (!a_) {
-      os << name_ << "(?)";
-    } else {
-      os << name_ << "(" << a_ << ")";
-    }
+    os << name_;
   }
 
-  virtual Sexp eval() const {
-    if (a_) {
-      Sexp a = a_->eval();
-      return body_(a)->eval();
-    }
-    return Sexp(new UnaryFunc(name_, body_));
+  Sexp call(Sexp _this, const Sexp arg) const override {
+    return body_(arg);
   }
 };
 
+
+class BinaryFunc : public Exp {
+ public:
+  std::string name_;
+  std::function<Sexp(Sexp, Sexp)> body_;
+
+  BinaryFunc(std::string name, std::function<Sexp(Sexp, Sexp)> body)
+      : name_(name)
+      , body_(body){}
+
+  virtual ~BinaryFunc() {
+    std::cerr << "bin destroyed: " << name_ << std::endl;
+  }
+
+  virtual void print(std::ostream&os) const {
+    os << name_;
+  }
+
+  Sexp call(Sexp _this, const Sexp arg) const override {
+    std::string name = name_;
+    return Sexp(
+        new UnaryFunc(
+            name_ + "(" + str(arg) + ")",
+            [=](Sexp a) {
+              *&_this; // capture this
+              return body_(arg, a);
+            }));
+  }
+};
+
+class TriFunc : public Exp {
+  friend class TriToBin;
+ public:
+  std::string name_;
+  std::function<Sexp(Sexp, Sexp, Sexp)> body_;
+
+  TriFunc(std::string name,
+          std::function<Sexp(Sexp, Sexp, Sexp)> body)
+      : name_(name)
+      , body_(body){
+  }
+
+  virtual ~TriFunc() {
+  }
+
+  void print(std::ostream&os) const override {
+    os << name_;
+  }
+
+  Sexp call(Sexp _this, const Sexp arg) const override {
+    std::string name = name_;
+    return Sexp(
+        new BinaryFunc(
+            name_ + "(" + str(arg) + ")",
+            [=](Sexp a, Sexp b) {
+              *&_this; // capture this
+              auto ret = body_(arg, a, b);
+              return ret;
+            }));
+  }
+};
+
+inline Sexp SComb() {
+  return Sexp(new TriFunc(
+      "s",
+      [](Sexp a, Sexp b, Sexp c) {
+        return ap(ap(a, c), ap(b, c));
+      }));
+}
+
+inline Sexp CreateTrue() {
+  return Sexp(new BinaryFunc(
+      "t",
+      [](Sexp a, Sexp b){ return a; }));
+}
+
+inline Sexp CreateFalse() {
+  return ap(SComb(), CreateTrue());
+}
 
 Sexp parse(VM*vm, std::istringstream& iss);
 
