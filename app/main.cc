@@ -82,6 +82,15 @@ void printSexp(const string& str) {
   cout << "Eval: " << eval(sexp) << endl;
 }
 
+void printMod(const string& str) {
+  cout << "Input: " << str << endl;
+  Sexp sexp = parse(nullptr, str);
+  cout << "Parsed: " << sexp << endl;
+  auto e = eval(sexp);
+  cout << "Eval: " << e << endl;
+  cout << "Mod-str: " << e->mod() << endl;
+}
+
 int runLocal(const string& path) {
   /*
   printNum(1);
@@ -104,6 +113,7 @@ int runLocal(const string& path) {
   cerr << decode("1101000") << endl;
   */
 
+  /*
   printSexp("ap ap add 1 2");
   printSexp("ap ap ap cons 1 2 add");
   printSexp("ap ap ap c add 1 2");
@@ -126,7 +136,14 @@ int runLocal(const string& path) {
   cout << "Evaluate galaxy" << endl;
   auto p = vm.protocol("galaxy");
   cout << "galaxy = " << eval(p) << endl;
-  
+  */
+  printMod("ap mod 0");
+  printMod("ap mod 1");
+  printMod("ap mod -1");
+  printMod("ap mod 2");
+  printMod("ap mod -2");
+  printMod("ap mod 256");
+  printMod("ap mod -256");
   return 0;
 }
 

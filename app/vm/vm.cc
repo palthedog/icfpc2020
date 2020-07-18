@@ -1,7 +1,11 @@
 #include <fstream>
 #include <cstdlib>
 
+#include <types.h>
+
 #include "vm.h"
+
+namespace mp = boost::multiprecision;
 
 using namespace std;
 
@@ -121,6 +125,14 @@ Sexp parse(VM*vm, istringstream& iss) {
     p = new Nil();
   } else if (token[0] == '-' || (token[0] >= '0' && token[0] <= '9')) {
     p = new Num(token);
+  } else if (token == "mod") {
+    p = new UnaryFunc(
+        "mod",
+        [](Sexp a){
+          auto e = to_int(a);
+          return Sexp(new ModResult(e));
+        });
+    
   } else {
     cerr << "Unknown: " << token << endl;
     cerr.flush();
@@ -190,4 +202,45 @@ Sexp Function::eval_(Sexp _this) const{
   auto f = vm_->function(index_);
   //cout << "func.eval: " << f << endl;
   return eval(f);
+}
+
+std::string ModResult::mod() const {
+  bint num = num_;
+  cerr << "mod(" << num << ")" << endl;
+  string s;
+  if (num >= 0) {
+    s = "01";
+  } else {
+    s = "10";
+    num = -num;
+  }
+
+  int width;  
+  int bits;
+  if (num == 0) {
+    width = 0;
+  } else {
+    breal num_r(num);
+    breal bits_r = mp::floor(mp::log(num_r) / mp::log(breal(2.0))) + 1;
+    breal width_r = (bits_r / 4) + 1;
+    width = (int) width_r;
+    bits = (int) bits;
+    cerr << "raw bits: " << bits_r << endl;
+  }
+
+  bits = width * 4;
+  cerr << "bits: " << bits << ", width: " << width << endl;
+  for (int i = 0; i < width; i++) {
+    s += '1';
+  }
+  s += '0';
+
+  for (int i = bits - 1; i >= 0; i--) {
+    if (mp::bit_test(num, i)) {
+      s += '1';
+    } else {
+      s += '0';
+    }
+  }
+  return s;
 }

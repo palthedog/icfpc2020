@@ -56,6 +56,11 @@ class Exp {
     std::cerr << "cdr not supported: " << *this << std::endl;
     exit(1);
   }
+
+  virtual std::string mod() const {
+    std::cerr << "mod not supported: " << *this << std::endl;
+    exit(1);
+  }
   
   virtual void print(std::ostream&os) const = 0;
 
@@ -279,6 +284,22 @@ class Cons : public Exp {
   }
 };
 
+class ModResult : public Exp {
+  bint num_;
+ public:
+  ModResult(bint num): num_(num) {
+  }
+
+  virtual ~ModResult() {
+  }
+
+  virtual void print(std::ostream&os) const {
+    os << "mod(" << num_ << ")";
+  }
+
+  std::string mod() const override;
+};
+
 class UnaryFunc : public Exp {
  public:
   std::string name_;
@@ -301,7 +322,6 @@ class UnaryFunc : public Exp {
     return body_(arg);
   }
 };
-
 
 class BinaryFunc : public Exp {
  public:
