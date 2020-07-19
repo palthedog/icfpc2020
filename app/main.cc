@@ -102,7 +102,7 @@ void printMod(const string& str) {
   cout << "Mod-str: " << e->mod() << endl;
 }
 
-int runLocal(const string& path) {
+int runTest() {
   /*
   printNum(1);
   printNum(7);
@@ -186,13 +186,9 @@ int runLocal(const string& path) {
   printSexp("ap dem ap mod ap ap cons 1 ap ap cons 2 nil");
 
   printSexp("ap dem ap mod ap ap cons 1 ap ap cons 2 nil");
+}
 
-  cerr << call(Mod(), List(num(1), num(2))) << endl;
-  cerr << call(Dem(), call(Mod(), List(num(1), num(2)))) << endl;
-
-  cerr << call(Mod(), List(num(1), List(num(2), num(3)), num(4))) << endl;
-  cerr << call(Dem(), call(Mod(), List(num(1), List(num(2), num(3)), num(4)))) << endl;
-
+int runLocal(const string& path) {
   int x = 0;
   int y = 0;
   Sexp state = nil();
@@ -266,6 +262,51 @@ int runLocal(const string& path) {
   return 0;
 }
 
+int runBot() {
+  cout << "Run bot" << endl;
+  bool gprof = false;
+#ifdef GPROF
+  gprof = true;
+#endif
+  cout << "player key:" << playerKey << endl;
+  Sexp playerKeyExp = num(bint("0x" + playerKey));
+  cout << "player key (enc):" << playerKeyExp << endl;
+
+  Sexp gameResponse;
+
+  /* CREATE
+  Sexp createRequest = List(num(1), num(0));
+  gameResponse = call(SEND, createRequest);
+  cout << "game respones: " << gameResponse << endl;
+  Sexp attackPlayer = num(bint("922338937212915124"));
+  Sexp defenderPlayer = num(bint("6458753618228656357"));
+  */
+  
+  Sexp joinRequest = List(num(2), playerKeyExp, NIL);
+
+  // send it to aliens and get the GameResponse
+  gameResponse = call(SEND, joinRequest);
+  cout << "game respones: " << gameResponse << endl;
+
+  // make valid START request using the provided playerKey and gameResponse returned from JOIN
+  Sexp startParam = List(num(4), num(8), num(16), num(32));
+  Sexp startRequest = List(num(3), playerKeyExp, startParam);
+
+  // send it to aliens and get the updated GameResponse
+  gameResponse = call(SEND, startRequest);
+  cout << "game respones: " << gameResponse << endl;
+
+  while (true) {
+    Sexp shipId = num(0);
+    Sexp v = Vec(num(1), num(1));
+    Sexp cmd = List(num(0), shipId, v);
+    Sexp commandRequest = List(num(4), playerKeyExp, cmd);
+    gameResponse = call(SEND, commandRequest);
+    cout << "game respones: " << gameResponse << endl;
+  }
+  return 0;
+}
+
 int communicate() {
   post("/aliens/send", modImpl(num(0)));
   return 0;
@@ -273,11 +314,14 @@ int communicate() {
 
 int main(int argc, char* argv[]) {
   const string galaxy = "../data/galaxy.txt";
-  if (argc != 3) {
+  if (argc < 3) {
     cerr << argv[0] << "<server> <key>" << endl;
     return 1;
   }
-  
+
   parseArgv(argc, argv);
+  if (argc == 3) {
+    return runBot();
+  }
   return runLocal(galaxy);
 }

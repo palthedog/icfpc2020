@@ -16,7 +16,7 @@ using namespace std;
 std::map<std::pair<Exp*, Exp*>, Sexp> globalCache_;
 
 map<bint, Sexp> numMap;
-Sexp GetNum(bint num) {
+Sexp num(bint num) {
   if (num < -1024 && num > 1024) {
     return Sexp(new Num(num));
   }
@@ -77,7 +77,7 @@ Sexp B(new TriFunc(
 Sexp ADD(new BinaryFunc(
         "add",
         [](Sexp a, Sexp b){
-          return Sexp(GetNum(to_int(a) + to_int(b)));
+          return Sexp(num(to_int(a) + to_int(b)));
         }));
 Sexp EQ(new BinaryFunc(
     "eq",
@@ -93,23 +93,23 @@ Sexp LT(new BinaryFunc(
 Sexp MUL(new BinaryFunc(
     "mul",
     [](Sexp a, Sexp b){
-      return Sexp(GetNum(to_int(a) * to_int(b)));
+      return Sexp(num(to_int(a) * to_int(b)));
     }));
 Sexp DIV(new BinaryFunc(
     "div",
-    [](Sexp a, Sexp b){ return Sexp(GetNum(to_int(a) / to_int(b))); }));
+    [](Sexp a, Sexp b){ return Sexp(num(to_int(a) / to_int(b))); }));
 
 Sexp INC(new UnaryFunc(
     "inc",
-    [](Sexp a){ return Sexp(GetNum(to_int(a) + 1)); }));;
+    [](Sexp a){ return Sexp(num(to_int(a) + 1)); }));;
 
 Sexp DEC(new UnaryFunc(
         "dec",
-        [](Sexp a){ return Sexp(GetNum(to_int(a) - 1)); }));
+        [](Sexp a){ return Sexp(num(to_int(a) - 1)); }));
 
 Sexp NEG(new UnaryFunc(
         "neg",
-        [](Sexp a){ return Sexp(GetNum(-to_int(a))); }));
+        [](Sexp a){ return Sexp(num(-to_int(a))); }));
 
 Sexp ISNIL(new UnaryFunc(
     "isnil",
@@ -241,7 +241,7 @@ Sexp parse(VM*vm, istringstream& iss) {
   } else if (token == "nil") {
     return NIL;
   } else if (token[0] == '-' || (token[0] >= '0' && token[0] <= '9')) {
-    return GetNum(bint(token));
+    return num(bint(token));
   } else if (token == "mod") {
     return MOD;
   } else if (token == "dem") {

@@ -106,7 +106,7 @@ while True:
                 clicked = False
                 def onClick(event):
                     global clicked
-                    
+
                     x = event.xdata
                     y = event.ydata
                     print('clicked', x, y)

@@ -197,9 +197,7 @@ class Num : public Exp {
   }
 };
 
-inline Sexp num(bint n) {
-  return Sexp(new Num(n));
-}
+extern Sexp num(bint n);
 
 class ModResult : public Exp {
   std::string mod_;
@@ -336,6 +334,7 @@ class Nil : public Exp {
 
 extern Sexp NIL;
 extern Sexp CONS;
+extern Sexp SEND;
   
 inline Sexp nil() {
   return NIL;
@@ -366,6 +365,10 @@ inline Sexp List(Sexp x0, Sexp x1) {
 
 inline Sexp List(Sexp x0, Sexp x1, Sexp x2) {
   return ap(ap(Cons(), x0), List(x1, x2));
+}
+
+inline Sexp List(Sexp x0, Sexp x1, Sexp x2, Sexp x3) {
+  return ap(ap(Cons(), x0), List(x1, x2, x3));
 }
 
 extern Sexp CAR;
