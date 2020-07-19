@@ -151,12 +151,15 @@ class Ap : public Exp {
 
   mutable Sexp cache_;
   
-  Sexp eval_(Sexp _this) const override{
+  Sexp eval_(Sexp _this) const override {
+    /*
     if (cache_) {
       return cache_;
     }
     cache_ = eval(call(eval(f_), arg_));
     return cache_;
+    */
+    return eval(call(eval(f_), arg_));
   }
 };
 

@@ -345,7 +345,7 @@ Sexp F38(new BinaryFunc(
                           ap(send(), ap(Car(), ap(Cdr(), ap(Cdr(), x0)))))));
       }));
       /*/
-      [=](Sexp p, Sexp a) {
+      [](Sexp p, Sexp a) {
         //cerr << "Arg: " << a << endl;
         Sexp flag = call(Car(), a);
         Sexp newState = call(Car(), call(Cdr(), a));
@@ -379,7 +379,7 @@ inline Sexp f38() {
 
 Sexp INTERACT(new TriFunc(
       "interact",
-      [=](Sexp p, Sexp s, Sexp v) {
+      [](Sexp p, Sexp s, Sexp v) {
         cerr << "in interact" << endl;
         return ap(ap(f38(), p), ap(ap(p, s), v));
         //return call(f38(), p, call(p, s, v));
