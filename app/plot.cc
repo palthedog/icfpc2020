@@ -5,6 +5,8 @@
 
 using namespace std;
 
+std::shared_ptr<Plot> plot(new Plot());
+
 void Plot::sendMessage(const std::string& mes) {
   if (online_) {
     asio::write(sock_, asio::buffer(mes));  

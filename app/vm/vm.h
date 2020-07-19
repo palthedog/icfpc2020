@@ -387,6 +387,30 @@ inline Sexp Cdr() {
   return CDR;
 }
 
+
+inline Sexp car(Sexp a) {
+  return call(CAR, a);
+}
+
+inline Sexp cdr(Sexp a) {
+  return call(CDR, a);
+}
+
+inline Sexp nth(Sexp a, int n) {
+  if (n == 0) {
+    return eval(car(a));
+  }
+  return nth(cdr(a), n-1);
+}
+
+inline Sexp cadr(Sexp a) {
+  return car(cdr(a));
+}
+
+inline Sexp caddr(Sexp a) {
+  return car(cdr(cdr(a)));
+}
+
 extern Sexp IF0;
 inline Sexp If0() {
   return IF0;

@@ -174,7 +174,7 @@ Sexp SEND(new UnaryFunc(
         cerr << "send: " << s << endl;
         string response = sendData("/aliens/send",s->mod());
         Sexp res = dem(response);
-        cerr << "resp: " << res << endl;
+        cerr << "recv: " << res << endl;
         return res;
       }));
 Sexp send() {

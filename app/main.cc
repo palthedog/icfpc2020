@@ -4,9 +4,13 @@
 #include <list>
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
+#define CPPHTTPLIB_KEEPALIVE_TIMEOUT_SECOND 20
+#define CPPHTTPLIB_READ_TIMEOUT_SECOND 20
+#define CPPHTTPLIB_WRITE_TIMEOUT_SECOND 20
 #include "httplib.h"
 
 #include <vm/vm.h>
+#include <game.h>
 #include <types.h>
 #include <plot.h>
 
@@ -16,19 +20,28 @@ bool https;
 string serverUrl;
 string serverName;
 int serverPort;
-string playerKey;
 
-std::shared_ptr<Plot> plot;
+string apiKey;
+string playerKeyStr;
 
 bool parseArgv(int argc, char**argv) {
 	const std::regex urlRegexp("(http|https)://([^/:]+)(:\\d+)?/?");
   const string serverUrl = argv[1];
-
-  playerKey = argv[2];
+  
+  if (argc == 3) {
+    // subbmission
+    cerr << "Submission mode" << endl;
+    playerKeyStr = argv[2];
+  } else if (argc == 4) {
+    // local bot test
+    cerr << "local mode" << endl;
+    apiKey = argv[2];
+    playerKeyStr = argv[3];
+  }
 
 	std::smatch urlMatches;
 	if (!std::regex_search(serverUrl, urlMatches, urlRegexp)) {
-		std::cout << "Unexpected server response:\nBad server URL" << std::endl;
+		std::cout << "Bad server URL" << std::endl;
 		return false;
 	}
   string protocol = urlMatches[1];
@@ -42,7 +55,8 @@ bool parseArgv(int argc, char**argv) {
   }
 
   cout << "ServerURL: " << serverUrl << endl;
-	std::cout << "ServerName: " << serverName << "; PlayerKey: " << playerKey << std::endl;
+	std::cout << "ServerName: " << serverName << "; APIKey: " << apiKey << std::endl;
+	std::cout << "PlayerKey: " << playerKeyStr << endl;
   return true;
 }
 
@@ -54,16 +68,19 @@ string post(const string&path, const string& body) {
     pclient.reset(new httplib::Client(serverName, serverPort));
   }
 
-  string pathWithKey = path + "?apiKey=" + playerKey;
-  std::cout << "PathWithKey: " << pathWithKey << "; body: " << body << std::endl;
+  string pathWithKey = path;
+  if (apiKey != "") {
+    pathWithKey += "?apiKey=" + apiKey;
+  }
+  //std::cout << "PathWithKey: " << pathWithKey << "; body: " << body << std::endl;
 
   const std::shared_ptr<httplib::Response> serverResponse = 
       pclient->Post(pathWithKey.c_str(), body.c_str(), "text/plain");
 
 	if (!serverResponse) {
 		std::cout << "Unexpected server response:\nNo response from server" << std::endl;
+    // retry
     exit(1);
-		return "";
 	}
 	
 	if (serverResponse->status != 200) {
@@ -73,7 +90,7 @@ string post(const string&path, const string& body) {
 		return "";
 	}
 
-	std::cout << "Server response: " << serverResponse->body << std::endl;
+	//std::cout << "Server response: " << serverResponse->body << std::endl;
 	return serverResponse->body;
 }
 
@@ -186,6 +203,7 @@ int runTest() {
   printSexp("ap dem ap mod ap ap cons 1 ap ap cons 2 nil");
 
   printSexp("ap dem ap mod ap ap cons 1 ap ap cons 2 nil");
+  return 0;
 }
 
 int runLocal(const string& path) {
@@ -193,14 +211,7 @@ int runLocal(const string& path) {
   int y = 0;
   Sexp state = nil();
 
-  int cx = 0;
-  int cy = 0;
-
   VM vm(path);
-  plot.reset(new Plot());
-
-  int numDots = 0;
-
   list<pair<int, int>> bootstrap = {
     {0, 0},
     {0, 0},
@@ -263,45 +274,75 @@ int runLocal(const string& path) {
   return 0;
 }
 
+Sexp joinGame(Sexp playerKey) {
+  cout << "Join: " << playerKey << endl;
+  Sexp joinRequest = List(num(2), playerKey, NIL);
+
+  cout << "Join Request: " << joinRequest << endl;
+  // send it to aliens and get the GameResponse
+  Sexp gameResponse = call(SEND, joinRequest);
+  cout << "Join respones: " << gameResponse << endl;
+  return gameResponse;
+}
+
+Sexp startGame(Sexp playerKey, Sexp gameState) {
+  // make valid START request using the provided playerKey and gameResponse returned from JOIN
+  Sexp startParam = List(num(8), num(8), num(16), num(32));
+  Sexp startRequest = List(num(3), playerKey, startParam);
+
+  cout << "Start Request: " << startRequest << endl;
+  // send it to aliens and get the updated GameResponse
+  Sexp startResponse = call(SEND, startRequest);
+  cout << "Start response: " << startRequest << endl;
+  return startResponse;
+}
+
 int runBot() {
   cout << "Run bot" << endl;
-  bool gprof = false;
-#ifdef GPROF
-  gprof = true;
-#endif
-  cout << "player key:" << playerKey << endl;
-  Sexp playerKeyExp = num(bint(playerKey));
-  cout << "player key (enc):" << playerKeyExp << endl;
+  cout << "player key:" << playerKeyStr << endl;
+  Sexp playerKey = num(bint(playerKeyStr));
 
-  Sexp gameResponse;
-
-  /* CREATE
-  Sexp createRequest = List(num(1), num(0));
-  gameResponse = call(SEND, createRequest);
-  cout << "game respones: " << gameResponse << endl;
-  Sexp attackPlayer = num(bint("922338937212915124"));
-  Sexp defenderPlayer = num(bint("6458753618228656357"));
-  */
+  Sexp gameResponse = joinGame(playerKey);
+  if (!checkGame(gameResponse)) {
+    cout << "Failed to join game." << endl;
+    return 1;
+  }
   
-  Sexp joinRequest = List(num(2), playerKeyExp, NIL);
+  gameResponse = startGame(playerKey, gameResponse);
+  if (!checkGame(gameResponse)) {
+    cout << "Failed to start game." << endl;
+    return 1;
+  }
 
-  // send it to aliens and get the GameResponse
-  gameResponse = call(SEND, joinRequest);
-  cout << "game respones: " << gameResponse << endl;
-
-  // make valid START request using the provided playerKey and gameResponse returned from JOIN
-  Sexp startParam = List(num(4), num(8), num(16), num(32));
-  Sexp startRequest = List(num(3), playerKeyExp, startParam);
-
-  // send it to aliens and get the updated GameResponse
-  gameResponse = call(SEND, startRequest);
-  cout << "game respones: " << gameResponse << endl;
-
+  cout << "Game Response: " << gameResponse << endl;
   while (true) {
-    Sexp shipId = num(0);
-    Sexp v = Vec(num(1), num(1));
-    Sexp cmd = List(num(0), shipId, v);
-    Sexp commandRequest = List(num(4), playerKeyExp, cmd);
+    GameResponse game(gameResponse);
+
+    Sexp info = game.staticGameInfo();
+    Sexp state = game.gameState();
+    cout << "Tick: " << game.gameTick() << endl;
+    cout << "State: " << nth(state, 1) << endl;
+
+    for (const Ship& s : game.ships()) {
+      cout << "    " << s.toString() << endl;
+    }
+
+    if (!game.ok() || game.gameStage() != 1) {
+      cerr << "Finished?" << endl;
+      break;
+    }
+
+    Ship myShip = game.myShip();
+    Sexp shipId = num(myShip.shipId());
+
+    // Accelerate
+    Sexp velocity = myShip.velocity();
+    bint vx = to_int(car(velocity));
+    bint vy = to_int(cdr(velocity));
+    
+    Sexp cmd = myShip.accel(-vx * 100, -vy * 100);
+
+    Sexp commandRequest = List(num(4), playerKey, List(cmd));
     gameResponse = call(SEND, commandRequest);
     cout << "game respones: " << gameResponse << endl;
   }
@@ -324,5 +365,9 @@ int main(int argc, char* argv[]) {
   if (argc == 3) {
     return runBot();
   }
-  return runLocal(galaxy);
+
+  if (playerKeyStr == "galaxy") {
+    return runLocal(galaxy);
+  }
+  return runBot();
 }
