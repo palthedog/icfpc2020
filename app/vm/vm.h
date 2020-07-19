@@ -132,10 +132,6 @@ class Ap : public Exp {
   Ap()
       : f_() {
   }
-  
-  Ap(Sexp f)
-      : f_(f) {
-  }
 
   Ap(Sexp f, Sexp arg)
       : f_(f)
@@ -164,14 +160,6 @@ class Ap : public Exp {
     }
 
     return Exp::eval_(_this);
-  }
-  
-  Sexp call_(Sexp _this, const Sexp arg) const override {
-    if (!f_) {
-      return Sexp(new Ap(arg));
-    }
-    //std::cerr << "ap call: " << str(_this) << std::endl;
-    return Sexp(new Ap(f_, arg));
   }
 };
 
