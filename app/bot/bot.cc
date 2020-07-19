@@ -26,10 +26,6 @@ V targetV(GameResponse game, const Ship& ship) {
   V tv0(tvx0, tvy0);
   V tv1(tvx1, tvy1);
 
-  if (ship.role() == 1) {
-    return tv0;
-  }
-
   cerr << "TargetV0: " << tv0 << endl;
   cerr << "TargetV1: " << tv1 << endl;
   

@@ -339,6 +339,13 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
     forth = 5; // OK: 10
   }
 
+  if (eval(game.staticGameInfo())->isNil()) {
+    fuel = 1;
+    snd = 1;
+    third = 1;
+    forth = 1;
+  }
+  
   cerr << "GameState: " << gameState << endl;
   // make valid START request using the provided playerKey and gameResponse returned from JOIN
   Sexp startParam = List(num(fuel),
