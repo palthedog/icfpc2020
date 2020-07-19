@@ -1,6 +1,7 @@
 #ifndef PLOT_H
 #define PLOT_H
 
+#include <iostream>
 #include <boost/asio.hpp>
 #include <memory>
 #include <set>
@@ -12,6 +13,8 @@ class Plot {
   asio::io_service io_service_;
   ip::tcp::socket sock_;
 
+  bool online_;
+
  public:
 
   Plot()
@@ -21,16 +24,24 @@ class Plot {
     
     ip::tcp::resolver::query query(server_name, "15151");
 
-    boost::asio::connect(sock_, resolver.resolve(query));
-
-    asio::write(sock_, asio::buffer("CLEAR\n"));
+    boost::system::error_code error;
+    boost::asio::connect(sock_, resolver.resolve(query), error);
+    if (error) {
+      std::cerr << "offline mode" << std::endl;
+      online_ = false;
+    } else {
+      online_ = true;
+    }
   }
 
   std::set<std::pair<int, int>> dots_;
+
+  void sendMessage(const std::string& mes);
   
   void startDraw();
   void draw(int x, int y);
   void endDraw();
+  void clear();
 
   void send();
   std::string read();

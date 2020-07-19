@@ -232,10 +232,7 @@ Sexp multipledraw() {
         if (x0->isNil()) {
           return nil();
         }
-
-        Sexp h = ap(Car(), x0);
-        Sexp tail = ap(Cdr(), x0);
-        return eval(ap(ap(Cons(), call(draw(), h)), call(multipledraw(), tail)));
+        return eval(ap(ap(Cons(), call(draw(), ap(Car(), x0))), call(multipledraw(), ap(Cdr(), x0))));
       }));
 }
 

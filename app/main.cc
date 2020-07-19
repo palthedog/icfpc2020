@@ -228,6 +228,7 @@ int runLocal(const string& path) {
     istringstream iss(response);
     string cmd;
     iss >> cmd >> x >> y;
+    plot->clear();
   }
   return 0;
 }
@@ -238,12 +239,12 @@ int communicate() {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 4) {
-    parseArgv(argc, argv);
-    return runLocal(argv[3]);
+  const string galaxy = "../data/galaxy.txt";
+  if (argc != 3) {
+    cerr << argv[0] << "<server> <key>" << endl;
+    return 1;
   }
-
-  serverUrl = argv[1];
+  
   parseArgv(argc, argv);
-  return communicate();
+  return runLocal(galaxy);
 }
