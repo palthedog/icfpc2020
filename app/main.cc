@@ -287,7 +287,7 @@ Sexp joinGame(Sexp playerKey) {
 
 Sexp startGame(Sexp playerKey, Sexp gameState) {
   // make valid START request using the provided playerKey and gameResponse returned from JOIN
-  Sexp startParam = List(num(8), num(8), num(16), num(32));
+  Sexp startParam = List(num(100), num(8), num(16), num(32));
   Sexp startRequest = List(num(3), playerKey, startParam);
 
   cout << "Start Request: " << startRequest << endl;
@@ -340,7 +340,8 @@ int runBot() {
     bint vx = to_int(car(velocity));
     bint vy = to_int(cdr(velocity));
     
-    Sexp cmd = myShip.accel(-vx * 100, -vy * 100);
+    //Sexp cmd = myShip.accel(-vx * 1000, -vy * 8);
+    Sexp cmd = myShip.accel(vx, vy);
 
     Sexp commandRequest = List(num(4), playerKey, List(cmd));
     gameResponse = call(SEND, commandRequest);
