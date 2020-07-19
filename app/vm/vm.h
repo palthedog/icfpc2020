@@ -152,13 +152,12 @@ class Ap : public Exp {
   mutable Sexp cache_;
   
   Sexp eval_(Sexp _this) const override {
-    /*
     if (cache_) {
       return cache_;
     }
+
     cache_ = eval(call(eval(f_), arg_));
     return cache_;
-    */
     return eval(call(eval(f_), arg_));
   }
 };
@@ -171,6 +170,11 @@ inline Sexp ap(Sexp func, Sexp a) {
   if (f != globalCache_.end()) {
     return f->second;
   }
+
+  if (globalCache_.size() > 100000) {
+    globalCache_.clear();
+  }
+  
   Sexp node(new Ap(func, a));
   globalCache_[key] = node;
   return node;

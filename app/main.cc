@@ -269,7 +269,7 @@ int runBot() {
   gprof = true;
 #endif
   cout << "player key:" << playerKey << endl;
-  Sexp playerKeyExp = num(bint("0x" + playerKey));
+  Sexp playerKeyExp = num(bint(playerKey));
   cout << "player key (enc):" << playerKeyExp << endl;
 
   Sexp gameResponse;
