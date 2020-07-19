@@ -41,6 +41,8 @@ class Plot {
   void startDraw();
   void draw(int x, int y);
   void endDraw();
+  void flush();
+  
   void clear();
 
   void send();

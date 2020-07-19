@@ -240,6 +240,7 @@ int runLocal(const string& path) {
 
     state = call(Car(), result);
 
+    plot->flush();
     if (!bootstrap.empty()) {
       auto it = bootstrap.begin();;
       x = it->first;

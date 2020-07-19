@@ -31,6 +31,10 @@ void Plot::clear() {
   sendMessage("CLEAR\n");
 }
 
+void Plot::flush() {
+  sendMessage("FLUSH\n");
+}
+
 void Plot::send() {
   ostringstream oss;
   for (auto dot : dots_) {

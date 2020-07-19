@@ -60,11 +60,14 @@ while True:
     print('connected', addr)
 
     try:
-        minP = 0
-        maxP = 0
+        minX = 0
+        maxX = 0
+        minY = 0
+        maxY = 0
         xs = []
         ys = []
         shouldClear = True
+        layer = 0
         for line in linesplit(conn):
             #print line
             line = line.strip()
@@ -72,12 +75,16 @@ while True:
             
             if re.search('START', line):                    
                 print 'start drawing'
+                layer += 1
                 if shouldClear:
                     print 'clearing'
                     axes.clear()
                     axes.set_aspect('equal')
                     shouldClear = False
-                    axes.grid(True)
+                    #axes.grid(True)
+                    minX = minY = maxX = maxY = 0
+                    layer = 0
+
                 xs = []
                 ys = []                    
             elif re.search('CLEAR', line):
@@ -85,23 +92,30 @@ while True:
                 shouldClear = True
             elif re.search('END', line):
                 print 'end drawing'
-                pad = 3
 
-                minP = min(xs + ys + [minP])
-                maxP = max(xs + ys + [maxP])
-
-                axes.set_xlim(xmin = minP - pad, xmax=maxP + pad)
-                axes.set_ylim(ymax = minP - pad, ymin=maxP + pad)
+                #axes.set_xlim(xmin = minP - pad, xmax=maxP + pad)
+                #axes.set_ylim(ymax = minP - pad, ymin=maxP + pad)
                 #axes.invert_yaxis()
 
                 #line.set_ydata(np.random.randn(100))
 
-                c = pylab.cm.hsv(random.random())
+                #c = pylab.cm.hsv(random.random())
+                c = pylab.cm.hsv(layer * (1.1/5))
                 square_scatter(axes, xs, ys, size = 1, alpha = 0.6, color=c)
         
                 #pylab.draw()
+                #fig.canvas.blit(axes.bbox)
+                #fig.canvas.flush_events()
+            elif re.search('FLUSH', line):
+                print 'flush'
+                # Cleanup lim
+                pad = 3
+                axes.set_xlim(xmin = minX - pad, xmax=maxX + pad)
+                axes.set_ylim(ymax = minY - pad, ymin=maxY + pad)
+                    
                 fig.canvas.blit(axes.bbox)
                 fig.canvas.flush_events()
+                
             elif re.search('READ', line):
                 clicked = False
                 def onClick(event):
@@ -122,9 +136,6 @@ while True:
                     print('message sent')
                     clicked = True
 
-                fig.canvas.blit(axes.bbox)
-                fig.canvas.flush_events()
-                    
                 cid = pylab.connect('button_press_event', onClick)
                 print '\n\n\n\n'
                 print'********************'
@@ -144,6 +155,11 @@ while True:
                     d, x, y = params
                     x = int(x)
                     y = int(y)
+                    
+                    minX = min(minX, x)
+                    maxX = max(maxX, x)
+                    minY = min(minY, y)
+                    maxY = max(maxY, y)
                     xs.append(x)
                     ys.append(y)
                     #print 'draw %d %d' % (x, y)

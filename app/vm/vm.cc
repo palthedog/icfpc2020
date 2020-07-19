@@ -362,8 +362,8 @@ Sexp F38(new BinaryFunc(
           cerr << "New State: " << ns << endl;
           return List(ns, drw);
         } else {
-          cerr << "f38 -> interact" << endl;
-          cerr << "newState: " << str(newState) << endl;
+          //cerr << "f38 -> interact" << endl;
+          cerr << "NewState: " << str(newState) << endl;
           //cerr << "data: " << str(data) << endl;
           Sexp m_newState = call(modem(), newState);
           //cerr << "Newstate: " << m_newState << endl;
@@ -380,7 +380,7 @@ inline Sexp f38() {
 Sexp INTERACT(new TriFunc(
       "interact",
       [](Sexp p, Sexp s, Sexp v) {
-        cerr << "in interact" << endl;
+        //cerr << "in interact" << endl;
         return ap(ap(f38(), p), ap(ap(p, s), v));
         //return call(f38(), p, call(p, s, v));
       }));
