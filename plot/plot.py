@@ -100,7 +100,7 @@ while True:
                 #line.set_ydata(np.random.randn(100))
 
                 #c = pylab.cm.hsv(random.random())
-                c = pylab.cm.hsv(layer * (1.1/5))
+                c = pylab.cm.hsv(layer * (1.1 / 5))
                 square_scatter(axes, xs, ys, size = 1, alpha = 0.6, color=c)
         
                 #pylab.draw()
