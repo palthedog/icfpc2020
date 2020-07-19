@@ -3,6 +3,7 @@
 
 #include <boost/asio.hpp>
 #include <memory>
+#include <set>
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -21,11 +22,17 @@ class Plot {
     ip::tcp::resolver::query query(server_name, "15151");
 
     boost::asio::connect(sock_, resolver.resolve(query));
+
+    asio::write(sock_, asio::buffer("CLEAR\n"));
   }
 
+  std::set<std::pair<int, int>> dots_;
+  
   void startDraw();
   void draw(int x, int y);
   void endDraw();
+
+  void send();
   std::string read();
 };
 

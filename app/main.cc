@@ -198,27 +198,35 @@ int runLocal(const string& path) {
   int x = 0;
   int y = 0;
   Sexp state = nil();
-  while (true) {
-    plot.reset(new Plot());
 
+  int cx = 0;
+  int cy = 0;
+
+  VM vm(path);
+  plot.reset(new Plot());
+
+  int numDots = 0;
+
+  while (true) {
     cout << "x: " << x << ", y: " << y << endl;
 
-    VM vm(path);
     //auto vec0 = 
     //Sexp p = vm.protocol("galaxy");
     Sexp p = vm.interact("galaxy", state, Vec(num(x), num(y)));
     // Sexp p = vm.function(1141);
     cout << "Start evaluating: " << str(p) << endl;
-
+    
     Sexp result = eval(p);
     cout << "p = " << result << endl;
 
     state = call(Car(), result);
 
+    cout << "listening" << endl;
     string response = plot->read();
-    string cmd;
     cout << "from plotter: " << response << endl;
+
     istringstream iss(response);
+    string cmd;
     iss >> cmd >> x >> y;
   }
   return 0;

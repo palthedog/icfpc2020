@@ -198,18 +198,24 @@ Sexp draw() {
   return Sexp(new UnaryFunc(
       "draw",
       [](Sexp x0) {
+        if (plot) {
+          plot->startDraw();
+        }
+
         x0 = eval(x0);
-         while (!x0->isNil()) {
-           Sexp h = eval(call(Car(), x0));
-           
-           Sexp x = eval(call(Car(), h));
-           Sexp y = eval(call(Cdr(), h));
-           cerr << "DRAW(" << x << ", " << y << ")" << endl;
-           if (plot) {
-             plot->draw((int)to_int(x), (int)to_int(y));
-           }
-           
-           x0 = eval(call(Cdr(), x0));
+        while (!x0->isNil()) {
+          Sexp h = eval(call(Car(), x0));
+          
+          Sexp x = eval(call(Car(), h));
+          Sexp y = eval(call(Cdr(), h));
+          if (plot) {
+            plot->draw((int)to_int(x), (int)to_int(y));
+          }
+          
+          x0 = eval(call(Cdr(), x0));
+        }
+        if (plot) {
+          plot->endDraw();
         }
         return nil();
       }));
@@ -221,16 +227,15 @@ Sexp multipledraw() {
       [](Sexp x0) {
         cerr << "multipledraw: " << x0 << endl;
         x0 = eval(x0);
+        cerr << "md evaled: " << x0 << endl;
+
         if (x0->isNil()) {
           return nil();
         }
 
-        Sexp h = call(Car(), x0);
-        Sexp drawH = call(draw(), h);
-
-        Sexp tail = call(Cdr(), x0);
-        Sexp multiDraw = eval(call(multipledraw(), tail));
-        return eval(ap(ap(Cons(), drawH), multiDraw));
+        Sexp h = ap(Car(), x0);
+        Sexp tail = ap(Cdr(), x0);
+        return eval(ap(ap(Cons(), call(draw(), h)), call(multipledraw(), tail)));
       }));
 }
 
@@ -261,13 +266,8 @@ Sexp f38() {
         if (intFlag == 0) {
           // modem
           cerr << "f38 -> draw: " << data << endl;
-          if (plot) {
-            plot->startDraw();
-          }
           Sexp drw = call(multipledraw(), data);
-          if (plot) {
-            plot->endDraw();
-          }
+          cerr << "Eval New State: " << newState << endl;          
           Sexp ns = eval(call(modem(), newState));
           cerr << "New State: " << ns << endl;
           return List(ns, drw);
@@ -300,6 +300,7 @@ Sexp VM::interact(
     Sexp state,
     Sexp vec) const {
   cerr << "vm.interact" << endl;
+
   Sexp p = eval(protocol(name));
   //return call(::interact(), p, state, vec);
   return ap(ap(ap(::interact(), p), state), vec);

@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <tuple>
+#include <vector>
 
 #include <memory>
 
@@ -447,6 +448,7 @@ inline Sexp Mod() {
 Sexp Dem();
 Sexp dem(std::string s);
 std::tuple<Sexp, std::string> demImpl(std::string s);
+Sexp multipledraw();
 
 Sexp parse(VM*vm, std::istringstream& iss);
 
@@ -462,7 +464,9 @@ class VM {
   Sexp interact(const std::string&name, Sexp state, Sexp vec) const;  
   Sexp protocol(const std::string&name) const;
   Sexp function(int index) const;
+
  private:
+
   std::map<int, Sexp> functions_;
   std::map<std::string, Sexp> protocols_;
 };
