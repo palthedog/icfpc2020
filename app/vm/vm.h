@@ -129,10 +129,6 @@ class Ap : public Exp {
   Sexp arg_;
   
  public:
-  Ap()
-      : f_() {
-  }
-
   Ap(Sexp f, Sexp arg)
       : f_(f)
       , arg_(arg) {
@@ -165,14 +161,6 @@ class Ap : public Exp {
 
 inline Sexp ap(Sexp f, Sexp a) {
   return Sexp(new Ap(f, a));
-}
-
-inline Sexp ap(Sexp f) {
-  return Sexp(new Ap(f));
-}
-
-inline Sexp ap() {
-  return Sexp(new Ap());
 }
 
 class Num : public Exp {
