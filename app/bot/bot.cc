@@ -44,10 +44,11 @@ Sexp Bot::command(GameResponse game) {
   
   Sexp shipId = num(myShip.shipId());
 
-  V dp = enemyShip.position() - myShip.position();
+  V ePos = enemyShip.position();
+  V dp = ePos - myShip.position();
   
   if (game.role() == 0 && game.gameTick() % 5 == 0) {
-    return myShip.shoot(dp.x, dp.y);
+    return myShip.shoot(ePos.x, ePos.y);
   }
 
   // Move
