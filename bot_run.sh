@@ -2,7 +2,6 @@
 
 p=0
 
-echo "Start creating a room"
 cd build
 
 ../create/create "$@" | (

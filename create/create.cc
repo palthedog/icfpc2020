@@ -9,6 +9,7 @@
 #include <vm/vm.h>
 #include <game.h>
 #include <types.h>
+#include <plot.h>
 
 using namespace std;
 
@@ -18,6 +19,8 @@ string serverName;
 int serverPort;
 
 string apiKey;
+
+std::shared_ptr<Plot> plot;
 
 bool parseArgv(int argc, char**argv) {
 	const std::regex urlRegexp("(http|https)://([^/:]+)(:\\d+)?/?");

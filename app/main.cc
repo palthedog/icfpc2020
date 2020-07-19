@@ -335,7 +335,7 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
     forth = 5; // OK: 10
     */
     snd = 10;
-    third = 11; // OK: 10, NG: 16
+    third = 11; // OK: 11, NG: 16
     forth = 5; // OK: 10
   }
 
@@ -350,7 +350,7 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
   cout << "Start Request: " << startRequest << endl;
   // send it to aliens and get the updated GameResponse
   Sexp startResponse = call(SEND, startRequest);
-  cout << "Start response: " << startRequest << endl;
+  cout << "Start request: " << startRequest << endl;
   return startResponse;
 }
 
@@ -364,6 +364,12 @@ int runBot() {
     cout << "Failed to join game." << endl;
     return 1;
   }
+  ;
+  Sexp info = GameResponse(gameResponse).staticGameInfo();
+  cout << "***" << endl;
+  cout << "Static Game Info: " << info << endl;
+  cout << "***" << endl;
+  
   
   gameResponse = startGame(playerKey, gameResponse);
   if (!checkGame(gameResponse)) {
@@ -389,7 +395,7 @@ int runBot() {
     Sexp state = game.gameState();
     cout << "OK: " << game.ok() << endl;
     cout << "Tick: " << game.gameTick() << endl;
-    cout << "State: " << nth(state, 1) << endl;
+    cout << "?State: " << nth(state, 1) << endl;
 
     for (const Ship& s : game.ships()) {
       cout << "    " << s.toString() << endl;

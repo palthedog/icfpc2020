@@ -54,8 +54,15 @@ pylab.title("icfpc2020")
 fig.canvas.draw()
 fig.show()
 
+conn = None
+
 while True:    
     try:
+        if conn:
+            print('closing')
+            conn.close()
+            conn = None
+            
         print('listening')
         conn, addr = s.accept()
         print('connected', addr)
@@ -171,3 +178,4 @@ while True:
     except Exception as e:
         print('closed', e)
         conn.close()
+        conn = None
