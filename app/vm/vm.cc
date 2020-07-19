@@ -13,6 +13,8 @@ namespace mp = boost::multiprecision;
 
 using namespace std;
 
+std::map<std::pair<Exp*, Exp*>, Sexp> globalCache_;
+
 map<bint, Sexp> numMap;
 Sexp GetNum(bint num) {
   if (num < -1024 && num > 1024) {
@@ -190,12 +192,10 @@ Sexp parse(VM*vm, istringstream& iss) {
     p = new Function(vm, token);
   } else if (token == "ap") {
     Sexp f = parse(vm, iss);
-    if (!f) {
-      return ap();
-    }
     Sexp arg = parse(vm, iss);
-    if (!arg) {
-      return ap(f);
+    if (!f || !arg) {
+      cerr << "Invalid format. ap is used sololy" << endl;
+      exit(1);
     }
     return ap(f, arg);
   } else if (token == "send") {
@@ -315,15 +315,15 @@ inline Sexp draw() {
 
 Sexp MULTIPLEDRAW(new UnaryFunc(
     "multipledraw",
-      [](Sexp x0) {
-        cerr << "multipledraw: " << x0 << endl;
-        x0 = eval(x0);
-        cerr << "md evaled: " << x0 << endl;
-
-        if (x0->isNil()) {
-          return nil();
-        }
-        return eval(ap(ap(Cons(), call(draw(), ap(Car(), x0))), call(multipledraw(), ap(Cdr(), x0))));
+    [](Sexp x0) {
+      //cerr << "multipledraw: " << x0 << endl;
+      x0 = eval(x0);
+      //cerr << "md evaled: " << x0 << endl;
+      
+      if (x0->isNil()) {
+        return nil();
+      }
+      return eval(ap(ap(Cons(), call(draw(), ap(Car(), x0))), call(multipledraw(), ap(Cdr(), x0))));
     }));
 
 inline Sexp multipledraw() {
@@ -346,7 +346,7 @@ Sexp F38(new BinaryFunc(
       }));
       /*/
       [=](Sexp p, Sexp a) {
-        cerr << "Arg: " << a << endl;
+        //cerr << "Arg: " << a << endl;
         Sexp flag = call(Car(), a);
         Sexp newState = call(Car(), call(Cdr(), a));
         Sexp data = call(Car(), call(Cdr(), call(Cdr(), a)));
@@ -357,18 +357,18 @@ Sexp F38(new BinaryFunc(
           // modem
           cerr << "f38 -> draw: " << data << endl;
           Sexp drw = call(multipledraw(), data);
-          cerr << "Eval New State: " << newState << endl;          
+          //cerr << "Eval New State: " << newState << endl;          
           Sexp ns = eval(call(modem(), newState));
           cerr << "New State: " << ns << endl;
           return List(ns, drw);
         } else {
           cerr << "f38 -> interact" << endl;
           cerr << "newState: " << str(newState) << endl;
-          cerr << "data: " << str(data) << endl;
+          //cerr << "data: " << str(data) << endl;
           Sexp m_newState = call(modem(), newState);
-          cerr << "Newstate: " << m_newState << endl;
+          //cerr << "Newstate: " << m_newState << endl;
           Sexp response = call(send(), data);
-          cerr << "Response: " << response << endl;
+          //cerr << "Response: " << response << endl;
           return call(interact(), p, m_newState, response);
         }
       }));

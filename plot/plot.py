@@ -1,5 +1,6 @@
 import pylab
 
+import sys
 import re
 import numpy as np
 
@@ -16,6 +17,7 @@ s.listen(10)
 
 def square_scatter(axes, x_array, y_array, size=0.5, **kwargs):
     size = float(size)
+    
     for x, y in zip(x_array, y_array):
         square = pylab.Rectangle((x-size/2,y-size/2), size, size, **kwargs)
         axes.add_patch(square)
@@ -24,6 +26,8 @@ def square_scatter(axes, x_array, y_array, size=0.5, **kwargs):
 def linesplit(socket):
     try:
         buffer = socket.recv(4096)
+    except KeyboardInterrupt:
+        sys.exit(1)
     except:
         print 'recv failed'
     buffering = True
@@ -40,22 +44,29 @@ def linesplit(socket):
     if buffer:
         yield buffer
 
-while True:
+pylab.ion()
+
+fig, axes = pylab.subplots()
+line, = axes.plot(np.random.randn(100))
+
+pylab.title("icfpc2020")
+
+fig.canvas.draw()
+fig.show()
+
+while True:    
     print('listening')
     conn, addr = s.accept()
-
     print('connected', addr)
-    pylab.ion()
 
     try:
         minP = 0
         maxP = 0
         xs = []
         ys = []
-        axes = pylab.axes()
         shouldClear = True
         for line in linesplit(conn):
-            print line
+            #print line
             line = line.strip()
             #print 'line', line
             
@@ -63,9 +74,7 @@ while True:
                 print 'start drawing'
                 if shouldClear:
                     print 'clearing'
-                    pylab.clf()
-                    pylab.title("icfpc2020")
-                    axes = pylab.axes()
+                    axes.clear()
                     axes.set_aspect('equal')
                     shouldClear = False
                     axes.grid(True)
@@ -76,18 +85,23 @@ while True:
                 shouldClear = True
             elif re.search('END', line):
                 print 'end drawing'
-                c = pylab.cm.hsv(random.random())
-                square_scatter(axes, xs, ys, size = 1, alpha = 0.6, color=c)
+                pad = 3
 
                 minP = min(xs + ys + [minP])
                 maxP = max(xs + ys + [maxP])
-                pad = 3
-                axes.set_xlim(xmin = minP - pad, xmax=maxP + pad)
-                axes.set_ylim(ymin = minP - pad, ymax=maxP + pad)
-                axes.invert_yaxis()
 
-                pylab.draw()
-                pylab.pause(0.1)                
+                axes.set_xlim(xmin = minP - pad, xmax=maxP + pad)
+                axes.set_ylim(ymax = minP - pad, ymin=maxP + pad)
+                #axes.invert_yaxis()
+
+                #line.set_ydata(np.random.randn(100))
+
+                c = pylab.cm.hsv(random.random())
+                square_scatter(axes, xs, ys, size = 1, alpha = 0.6, color=c)
+        
+                #pylab.draw()
+                fig.canvas.blit(axes.bbox)
+                fig.canvas.flush_events()
             elif re.search('READ', line):
                 clicked = False
                 def onClick(event):
@@ -98,6 +112,8 @@ while True:
                     print('clicked', x, y)
                     try:
                         mes = 'click %d %d' % (int(round(x)), int(round(y)));
+                    except KeyboardInterrupt:
+                        sys.exit(1)
                     except:
                         # invalid click
                         return
@@ -105,6 +121,9 @@ while True:
                     conn.send(mes)
                     print('message sent')
                     clicked = True
+
+                fig.canvas.blit(axes.bbox)
+                fig.canvas.flush_events()
                     
                 cid = pylab.connect('button_press_event', onClick)
                 print '\n\n\n\n'
@@ -127,9 +146,12 @@ while True:
                     y = int(y)
                     xs.append(x)
                     ys.append(y)
-                    print 'draw %d %d' % (x, y)
+                    #print 'draw %d %d' % (x, y)
                 else:
+                    print('unknown command', line)
                     break
-    except:
-        print('closed')
+    except KeyboardInterrupt:
+        sys.exit(0)
+    except Exception as e:
+        print('closed', e)
         conn.close()

@@ -148,19 +148,29 @@ class Ap : public Exp {
     }
     os  << ")";
   }
+
+  mutable Sexp cache_;
   
   Sexp eval_(Sexp _this) const override{
-    if (f_ && arg_) {
-      Sexp e = eval(call(eval(f_), arg_));
-      return e;
+    if (cache_) {
+      return cache_;
     }
-
-    return Exp::eval_(_this);
+    cache_ = eval(call(eval(f_), arg_));
+    return cache_;
   }
 };
 
-inline Sexp ap(Sexp f, Sexp a) {
-  return Sexp(new Ap(f, a));
+extern std::map<std::pair<Exp*, Exp*>, Sexp> globalCache_;
+
+inline Sexp ap(Sexp func, Sexp a) {
+  auto key = std::make_pair(func.get(), a.get());
+  auto f = globalCache_.find(key);
+  if (f != globalCache_.end()) {
+    return f->second;
+  }
+  Sexp node(new Ap(func, a));
+  globalCache_[key] = node;
+  return node;
 }
 
 class Num : public Exp {
