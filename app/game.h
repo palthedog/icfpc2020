@@ -24,23 +24,37 @@ class Ship {
     return to_int(nth(ship_, 1));
   }
 
-  Sexp position() const {
-    return nth(ship_, 2);
+  V position() const {
+    return toV(nth(ship_, 2));
   }
 
-  Sexp velocity() const {
-    return nth(ship_, 3);
+  V velocity() const {
+    return toV(nth(ship_, 3));
+  }
+
+  Sexp spec() const {
+    return nth(ship_, 4);
+  }
+
+  bint fuel() const {
+    return to_int(car(spec()));
   }
 
   std::string toString() const {
     std::ostringstream oss;
-    Sexp pos = position();
-    Sexp vel = velocity();
+    auto pos = position();
+    auto vel = velocity();
     oss << "ship(" <<
         "r:" << role() <<
         ", id:" << shipId() <<
-        ", pos:" << to_int(car(pos)) << "," << to_int(cdr(pos)) <<
-        ", vel:" << to_int(car(vel)) << "," << to_int(cdr(vel));
+        ", pos:" << pos <<
+        ", vel:" << vel <<
+        ", fuel:" << fuel() <<
+        "   spec:" << spec() <<
+        ", b:" << eval(nth(ship_, 5)) <<
+        ", c:" << eval(nth(ship_, 6)) <<
+        ", d:" << eval(nth(ship_, 7)) <<
+        ")";
     return oss.str();
   }
 
@@ -49,6 +63,12 @@ class Ship {
   Sexp accel(bint x, bint y) {
     Sexp v = Vec(num(x), num(y));
     return List(num(0), num(shipId()), v);
+  }
+
+  Sexp shoot(bint x, bint y) {
+    Sexp v = Vec(num(x), num(y));
+    Sexp x3 = num(1);
+    return List(num(2), num(shipId()), v, x3);
   }
 };
 
@@ -79,8 +99,8 @@ class GameResponse {
     return to_int(nth(staticGameInfo(), 1));
   }
 
-  Sexp gameTick() const {
-    return nth(gameState(), 0);
+  int gameTick() const {
+    return (int)to_int(nth(gameState(), 0));
   }
 
   Sexp shipsAndCommands() const {
@@ -97,6 +117,17 @@ class GameResponse {
     exit(1);
     return Ship(NIL);
   }
+
+  Ship enemyShip() const {
+    for (const auto& s : ships()) {
+      if (s.role() != role()) {
+        return s;
+      }
+    }
+    std::cerr << "enemy ship not found" << std::endl;
+    exit(1);
+    return Ship(NIL);
+  }
   
   std::vector<Ship> ships() const {
     Sexp l = eval(shipsAndCommands());
@@ -110,7 +141,7 @@ class GameResponse {
   }
 };
 
-bool checkGame(Sexp state) {
+inline bool checkGame(Sexp state) {
   GameResponse game(state);
   if (!game.ok()) {
     return false;

@@ -411,6 +411,47 @@ inline Sexp caddr(Sexp a) {
   return car(cdr(cdr(a)));
 }
 
+inline std::pair<bint, bint> VecToPair(Sexp v) {
+  return make_pair(to_int(car(v)), to_int(cdr(v)));
+}
+
+struct V {
+  bint x;
+  bint y;
+  V(bint a, bint b) : x(a), y(b) {}
+
+  bint dist(const V& other) const {
+    bint dx = x - other.x;
+    bint dy = x - other.x;
+    return abs(dx) + abs(dy);
+  }
+
+  V norm() const {
+    if (abs(x) > abs(y)) {
+      return V(x > 0 ? 1 : -1, 0);
+    }
+    return V(0, y > 0 ? 1 : -1);
+  }
+
+  friend std::ostream& operator<<(std::ostream&os, const V&e);
+  V operator-() const {
+    return V(-x, -y);
+  }
+};
+inline std::ostream& operator<<(std::ostream&os, const V&e) {
+  os << "[" << e.x << "," << e.y << "]";
+  return os;
+}
+
+inline V operator-(const V&a, const V&b) {
+  return V(a.x - b.x, a.y - b.y);
+}
+
+
+inline V toV(Sexp v) {
+  return V(to_int(car(v)), to_int(cdr(v)));
+}
+
 extern Sexp IF0;
 inline Sexp If0() {
   return IF0;

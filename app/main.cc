@@ -10,6 +10,8 @@
 #include "httplib.h"
 
 #include <vm/vm.h>
+#include <bot/bot.h>
+
 #include <game.h>
 #include <types.h>
 #include <plot.h>
@@ -24,16 +26,22 @@ int serverPort;
 string apiKey;
 string playerKeyStr;
 
+bool localMode;
+
+std::shared_ptr<Plot> plot;
+
 bool parseArgv(int argc, char**argv) {
 	const std::regex urlRegexp("(http|https)://([^/:]+)(:\\d+)?/?");
   const string serverUrl = argv[1];
   
   if (argc == 3) {
     // subbmission
+    localMode = false;
     cerr << "Submission mode" << endl;
     playerKeyStr = argv[2];
   } else if (argc == 4) {
     // local bot test
+    localMode = true;
     cerr << "local mode" << endl;
     apiKey = argv[2];
     playerKeyStr = argv[3];
@@ -206,7 +214,35 @@ int runTest() {
   return 0;
 }
 
+void visualizeGame(GameResponse game) {
+  if (!plot) {
+    return;
+  }
+  
+  plot->clear();
+  
+  int earthSize = 16;
+  plot->startDraw();
+  for (int y = -earthSize; y <= earthSize; y++) {
+    for (int x = -earthSize; x <= earthSize; x++) {
+      plot->draw(x, y);      
+    }
+  }
+  plot->endDraw();
+
+  plot->startDraw();
+  for (const Ship& s : game.ships()) {
+    auto pos = s.position();
+    plot->draw((int)pos.x, (int)pos.y);
+  }
+  plot->endDraw();
+  
+  plot->flush();
+}
+
 int runLocal(const string& path) {
+  plot.reset(new Plot());
+
   int x = 0;
   int y = 0;
   Sexp state = nil();
@@ -286,8 +322,29 @@ Sexp joinGame(Sexp playerKey) {
 }
 
 Sexp startGame(Sexp playerKey, Sexp gameState) {
+  GameResponse game(gameState);
+
+  int fuel = 300;  // OK: 300, NG: 500
+  int snd = 1;
+  int third = 1;  // larger one consumes fewer fuel.
+  int forth = 1;
+  if (!localMode || game.role() == 0) {
+    /*
+    snd = 10;
+    third = 7; // OK: 10
+    forth = 5; // OK: 10
+    */
+    snd = 10;
+    third = 11; // OK: 10, NG: 16
+    forth = 5; // OK: 10
+  }
+
+  cerr << "GameState: " << gameState << endl;
   // make valid START request using the provided playerKey and gameResponse returned from JOIN
-  Sexp startParam = List(num(100), num(8), num(16), num(32));
+  Sexp startParam = List(num(fuel),
+                         num(snd),
+                         num(third),
+                         num(forth));
   Sexp startRequest = List(num(3), playerKey, startParam);
 
   cout << "Start Request: " << startRequest << endl;
@@ -315,11 +372,22 @@ int runBot() {
   }
 
   cout << "Game Response: " << gameResponse << endl;
+
+
+  if (apiKey != "" && GameResponse(gameResponse).role() == 0) {
+    // local test.
+    cerr << "Enable plotter" << endl;
+    plot.reset(new Plot());
+  }
+
+  Bot bot(playerKey);
   while (true) {
     GameResponse game(gameResponse);
+    visualizeGame(game);
 
     Sexp info = game.staticGameInfo();
     Sexp state = game.gameState();
+    cout << "OK: " << game.ok() << endl;
     cout << "Tick: " << game.gameTick() << endl;
     cout << "State: " << nth(state, 1) << endl;
 
@@ -327,22 +395,18 @@ int runBot() {
       cout << "    " << s.toString() << endl;
     }
 
-    if (!game.ok() || game.gameStage() != 1) {
-      cerr << "Finished?" << endl;
+    if (!game.ok()) {
+      cerr << "Fail?" << endl;
+      cerr << "  stage: " << game.gameState() << endl;
       break;
     }
 
-    Ship myShip = game.myShip();
-    Sexp shipId = num(myShip.shipId());
+    if (game.gameStage() != 1) {
+      cerr << "Finished" << endl;
+      break;
+    }
 
-    // Accelerate
-    Sexp velocity = myShip.velocity();
-    bint vx = to_int(car(velocity));
-    bint vy = to_int(cdr(velocity));
-    
-    //Sexp cmd = myShip.accel(-vx * 1000, -vy * 8);
-    Sexp cmd = myShip.accel(vx, vy);
-
+    Sexp cmd = bot.command(game);
     Sexp commandRequest = List(num(4), playerKey, List(cmd));
     gameResponse = call(SEND, commandRequest);
     cout << "game respones: " << gameResponse << endl;

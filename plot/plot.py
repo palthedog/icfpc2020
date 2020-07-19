@@ -55,11 +55,11 @@ fig.canvas.draw()
 fig.show()
 
 while True:    
-    print('listening')
-    conn, addr = s.accept()
-    print('connected', addr)
-
     try:
+        print('listening')
+        conn, addr = s.accept()
+        print('connected', addr)
+
         minX = 0
         maxX = 0
         minY = 0
