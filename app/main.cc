@@ -1,6 +1,7 @@
 #include <iostream>
 #include <regex>
 #include <string>
+#include <list>
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
@@ -123,8 +124,6 @@ int runLocal(const string& path) {
   cerr << decode("1101000") << endl;
   */
 
-  /*
-
   printSexp("ap ap add 1 2");
   printSexp("ap ap ap cons 1 2 add");
   printSexp("ap ap ap c add 1 2");
@@ -172,7 +171,6 @@ int runLocal(const string& path) {
   printSexp("ap ap div 6 -2");
   printSexp("ap ap div -5 3");
   printSexp("ap ap div -5 -3");
-  */
 
   // mod
   printSexp("ap mod nil");
@@ -207,7 +205,32 @@ int runLocal(const string& path) {
 
   int numDots = 0;
 
+  list<pair<int, int>> bootstrap = {
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {8, 4},
+    {2, -8},
+    {3, 6},
+    {0, -14},
+    {-4, 10},
+    {9, -3 },
+    {-4, 10},
+    {1, 4  }
+  };
+
+  bool gprof = false;
+#ifdef GPROF
+  gprof = true;
+#endif
+  
   while (true) {
+    plot->clear();
+    
     cout << "x: " << x << ", y: " << y << endl;
 
     //auto vec0 = 
@@ -221,14 +244,24 @@ int runLocal(const string& path) {
 
     state = call(Car(), result);
 
-    cout << "listening" << endl;
-    string response = plot->read();
-    cout << "from plotter: " << response << endl;
+    if (!bootstrap.empty()) {
+      auto it = bootstrap.begin();;
+      x = it->first;
+      y = it->second;
+      bootstrap.pop_front();
+    } else {
+      if (gprof) {
+        cout << "quitting for gprof." << endl;
+        return 0;
+      }
 
-    istringstream iss(response);
-    string cmd;
-    iss >> cmd >> x >> y;
-    plot->clear();
+      cout << "listening" << endl;
+      string response = plot->read();
+      cout << "from plotter: " << response << endl;
+      istringstream iss(response);
+      string cmd;
+      iss >> cmd >> x >> y;
+    }
   }
   return 0;
 }

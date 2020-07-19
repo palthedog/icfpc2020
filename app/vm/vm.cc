@@ -13,6 +13,146 @@ namespace mp = boost::multiprecision;
 
 using namespace std;
 
+map<bint, Sexp> numMap;
+Sexp GetNum(bint num) {
+  if (num < -1024 && num > 1024) {
+    return Sexp(new Num(num));
+  }
+  auto f = numMap.find(num);
+  if (f != numMap.end()) {
+    return f->second;
+  }
+
+  Sexp n(new Num(num));  
+  numMap[num] = n;
+  return n;
+}
+
+Sexp Nil::INSTANCE(new Nil());
+
+Sexp NIL(Nil::INSTANCE);
+Sexp CONS(new TriFunc(
+    "cons",
+    [](Sexp x0, Sexp x1, Sexp x2) {
+      x0 = eval(x0);
+      x1 = eval(x1);
+      x2 = eval(x2);
+      return ap(ap(x2, x0), x1);
+    }));
+
+Sexp CAR(new UnaryFunc(
+    "car",
+    [](Sexp a){
+      Sexp e = eval(a);
+      return ap(e, TRUE);
+    }));
+Sexp CDR(new UnaryFunc(
+      "cdr",
+      [](Sexp a){
+        Sexp e = eval(a);
+        return ap(e, FALSE);
+      }));
+Sexp IF0(new TriFunc(
+      "if0",
+      [](Sexp c, Sexp a, Sexp b){
+        bint e = to_int(c);
+        if (e == 0) {
+          return eval(a);
+        } else {
+          return eval(b);
+        }
+      }));
+Sexp C(new TriFunc(
+    "c",
+    [](Sexp x0, Sexp x1, Sexp x2) {
+      return ap(ap(x0, x2), x1);
+    }));
+Sexp B(new TriFunc(
+    "b",
+    [](Sexp x0, Sexp x1, Sexp x2) {
+      return ap(x0, ap(x1, x2));
+    }));
+Sexp ADD(new BinaryFunc(
+        "add",
+        [](Sexp a, Sexp b){
+          return Sexp(GetNum(to_int(a) + to_int(b)));
+        }));
+Sexp EQ(new BinaryFunc(
+    "eq",
+    [](Sexp a, Sexp b){
+      //cout << "eq: " << a << ", " << b << endl;
+      return (to_int(a) == to_int(b)) ? TRUE : FALSE;
+    }));
+Sexp LT(new BinaryFunc(
+    "lt",
+    [](Sexp a, Sexp b){
+      return (to_int(a) < to_int(b)) ? TRUE : FALSE;
+    }));
+Sexp MUL(new BinaryFunc(
+    "mul",
+    [](Sexp a, Sexp b){
+      return Sexp(GetNum(to_int(a) * to_int(b)));
+    }));
+Sexp DIV(new BinaryFunc(
+    "div",
+    [](Sexp a, Sexp b){ return Sexp(GetNum(to_int(a) / to_int(b))); }));
+
+Sexp INC(new UnaryFunc(
+    "inc",
+    [](Sexp a){ return Sexp(GetNum(to_int(a) + 1)); }));;
+
+Sexp DEC(new UnaryFunc(
+        "dec",
+        [](Sexp a){ return Sexp(GetNum(to_int(a) - 1)); }));
+
+Sexp NEG(new UnaryFunc(
+        "neg",
+        [](Sexp a){ return Sexp(GetNum(-to_int(a))); }));
+
+Sexp ISNIL(new UnaryFunc(
+    "isnil",
+    [](Sexp a){
+      Sexp e = eval(a);
+      return e->isNil() ? TRUE : FALSE ;
+    }));
+
+Sexp I(new UnaryFunc(
+    "i",
+    [](Sexp a){ return eval(a) ; }));
+Sexp S(new TriFunc(
+    "s",
+    [](Sexp a, Sexp b, Sexp c) {
+      Sexp ec = eval(c);
+      return ap(ap(a, ec), ap(b, ec));
+    }));
+
+Sexp MODEM(new UnaryFunc(
+    "modem",
+    [](Sexp x0) {
+      return ap(Dem(), eval(ap(Mod(), x0)));
+    }));
+
+Sexp MOD(new UnaryFunc(
+    "mod",
+    [](Sexp a){
+      return Sexp(new ModResult(modImpl(a)));
+    }));
+Sexp DEM(new UnaryFunc(
+    "dem",
+    [](Sexp a) {
+      Sexp exp = dem(eval(a)->mod());
+      return exp;
+    }));
+
+Sexp TRUE(new BinaryFunc(
+    "t",
+    [](Sexp a, Sexp b){ return eval(a); }));
+
+//Sexp FALSE(ap(S, TRUE));
+Sexp FALSE(new BinaryFunc(
+    "f",
+    [](Sexp a, Sexp b){ return eval(b); }));
+
 std::string str(const Sexp e) {
   ostringstream oss;
   e->print(oss);
@@ -25,8 +165,7 @@ std::string str(const Exp* e) {
   return oss.str();
 }
 
-Sexp send() {
-  return Sexp(new UnaryFunc(
+Sexp SEND(new UnaryFunc(
       "send",
       [](Sexp a) {
         Sexp s = eval(call(Mod(), a));
@@ -36,8 +175,10 @@ Sexp send() {
         cerr << "resp: " << res << endl;
         return res;
       }));
+Sexp send() {
+  return SEND;
 }
-
+      
 Sexp parse(VM*vm, istringstream& iss) {
   string token;
   if (!getline(iss, token, ' ')) {
@@ -52,7 +193,6 @@ Sexp parse(VM*vm, istringstream& iss) {
     if (!f) {
       return ap();
     }
-
     Sexp arg = parse(vm, iss);
     if (!arg) {
       return ap(f);
@@ -61,94 +201,53 @@ Sexp parse(VM*vm, istringstream& iss) {
   } else if (token == "send") {
     return send();
   } else if (token == "c") {
-    p = new TriFunc(
-        "c",
-        [](Sexp x0, Sexp x1, Sexp x2) {
-          return ap(ap(x0, x2), x1);
-        });
+    return C;
   } else if (token == "b") {
-    p = new TriFunc(
-        "b",
-        [](Sexp x0, Sexp x1, Sexp x2) {
-          return ap(x0, ap(x1, x2));
-        });
+    return B;
   } else if (token == "s") {
-    return SComb();
+    return S;
   } else if (token == "cons") {
-    //p = new Cons();
-    return Cons();
+    return CONS;
   } else if (token == "add") {
-    p = new BinaryFunc(
-        "add",
-        [](Sexp a, Sexp b){ return Sexp(new Num(to_int(a) + to_int(b))); });
+    return ADD;
   } else if (token == "eq") {
-    p = new BinaryFunc(
-        "eq",
-        [](Sexp a, Sexp b){
-          //cout << "eq: " << a << ", " << b << endl;
-          return (to_int(a) == to_int(b)) ? CreateTrue() : CreateFalse();
-        });
+    return EQ;
   } else if (token == "lt") {
-    p = new BinaryFunc(
-        "lt",
-        [](Sexp a, Sexp b){
-          //cout << "lt: " << a << ", " << b << endl;
-          return (to_int(a) < to_int(b)) ? CreateTrue() : CreateFalse();
-        });
+    return LT;
   } else if (token == "t") {
-    return CreateTrue();
+    return TRUE;
   } else if (token == "f") {
-    return CreateFalse();
+    return FALSE;
   } else if (token == "mul") {
-    p = new BinaryFunc(
-        "mul",
-        [](Sexp a, Sexp b){
-          return Sexp(new Num(to_int(a) * to_int(b)));
-        });
+    return MUL;
   } else if (token == "div") {
-    p = new BinaryFunc(
-        "div",
-        [](Sexp a, Sexp b){ return Sexp(new Num(to_int(a) / to_int(b))); });
+    return DIV;
   } else if (token == "if0") {
     return If0();
   } else if (token == "inc") {
-    p = new UnaryFunc(
-        "inc",
-        [](Sexp a){ return Sexp(new Num(to_int(a) + 1)); });
+    return INC;
   } else if (token == "dec") {
-    p = new UnaryFunc(
-        "dec",
-        [](Sexp a){ return Sexp(new Num(to_int(a) - 1)); });
+    return DEC;
   } else if (token == "neg") {
-    p = new UnaryFunc(
-        "neg",
-        [](Sexp a){ return Sexp(new Num(-to_int(a))); });
+    return NEG;
   } else if (token == "isnil") {
-    p = new UnaryFunc(
-        "isnil",
-        [](Sexp a){
-          Sexp e = eval(a);
-          return e->isNil() ? CreateTrue() : CreateFalse() ;
-        });
+    return ISNIL;
   } else if (token == "car") {
-    return Car();
+    return CAR;
   } else if (token == "cdr") {
-    return Cdr();
+    return CDR;
   } else if (token == "i") {
-    p = new UnaryFunc(
-        "i",
-        [](Sexp a){ return eval(a) ; });
+    return I;
   } else if (token == "nil") {
-    p = new Nil();
+    return NIL;
   } else if (token[0] == '-' || (token[0] >= '0' && token[0] <= '9')) {
-    p = new Num(token);
+    return GetNum(bint(token));
   } else if (token == "mod") {
-    return Mod();
+    return MOD;
   } else if (token == "dem") {
     return Dem();
   } else {
     cerr << "Unknown: " << token << endl;
-    cerr.flush();
     exit(1);
   }
   return Sexp(p);
@@ -186,16 +285,7 @@ VM::VM(const string&path) {
 
 Sexp interact();
 
-Sexp modem() {
-  return Sexp(new UnaryFunc(
-      "modem",
-      [](Sexp x0) {
-        return ap(Dem(), eval(ap(Mod(), x0)));
-      }));
-}
-
-Sexp draw() {
-  return Sexp(new UnaryFunc(
+Sexp DRAW(new UnaryFunc(
       "draw",
       [](Sexp x0) {
         if (plot) {
@@ -219,11 +309,12 @@ Sexp draw() {
         }
         return nil();
       }));
+inline Sexp draw() {
+  return DRAW;
 }
 
-Sexp multipledraw() {
-  return Sexp(new UnaryFunc(
-      "multipledraw",
+Sexp MULTIPLEDRAW(new UnaryFunc(
+    "multipledraw",
       [](Sexp x0) {
         cerr << "multipledraw: " << x0 << endl;
         x0 = eval(x0);
@@ -233,11 +324,13 @@ Sexp multipledraw() {
           return nil();
         }
         return eval(ap(ap(Cons(), call(draw(), ap(Car(), x0))), call(multipledraw(), ap(Cdr(), x0))));
-      }));
+    }));
+
+inline Sexp multipledraw() {
+  return MULTIPLEDRAW;
 }
 
-Sexp f38() {
-  return Sexp(new BinaryFunc(
+Sexp F38(new BinaryFunc(
       "f38",
       /*
       [=](Sexp x2, Sexp x0) {
@@ -279,17 +372,21 @@ Sexp f38() {
           return call(interact(), p, m_newState, response);
         }
       }));
-  //*/
+
+inline Sexp f38() {
+  return F38;
 }
 
-Sexp interact() {
-  return Sexp(new TriFunc(
+Sexp INTERACT(new TriFunc(
       "interact",
       [=](Sexp p, Sexp s, Sexp v) {
         cerr << "in interact" << endl;
         return ap(ap(f38(), p), ap(ap(p, s), v));
         //return call(f38(), p, call(p, s, v));
       }));
+
+inline Sexp interact() {
+  return INTERACT;
 }
 
 Sexp VM::interact(
@@ -461,13 +558,4 @@ Sexp dem(std::string s) {
   }
   //cerr << "dem result: " << exp << endl;
   return exp;
-}
-
-Sexp Dem() {
-  return Sexp(new UnaryFunc(
-      "dem",
-      [](Sexp a) {
-        Sexp exp = dem(eval(a)->mod());
-        return exp;
-      }));
 }

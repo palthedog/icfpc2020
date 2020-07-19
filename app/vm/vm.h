@@ -14,6 +14,7 @@
 class VM;
 
 class Exp;
+// typedef Exp* Sexp;
 typedef std::shared_ptr<Exp> Sexp;
 
 std::string str(const Sexp e);
@@ -65,10 +66,10 @@ class Exp {
 inline Sexp eval(Sexp e) {
   //std::cerr << "eval: " << str(e) << std::endl;
   while (!e->isNum()) {
-    Exp* ori = e.get();
+    Exp* ori = &*e;
     e = e->eval_(e);
     //std::cerr << "after: " << (long) e.get() << std::endl;
-    if (ori == e.get()) {
+    if (ori == &*e) {
       // not updated
       break;
     }
@@ -190,10 +191,6 @@ class Num : public Exp {
   bint num_;
 
  public:
-  Num(const std::string& token)
-      : num_(token) {
-  }
-
   Num(bint num)
       : num_(num) {
   }
@@ -324,30 +321,16 @@ class TriFunc : public Exp {
   }
 };
 
-inline Sexp SComb() {
-  return Sexp(new TriFunc(
-      "s",
-      [](Sexp a, Sexp b, Sexp c) {
-        Sexp ec = eval(c);
-        return ap(ap(a, ec), ap(b, ec));
-      }));
-}
-
-inline Sexp CreateTrue() {
-  return Sexp(new BinaryFunc(
-      "t",
-      [](Sexp a, Sexp b){ return eval(a); }));
-}
-
-inline Sexp CreateFalse() {
-  return ap(SComb(), CreateTrue());
-}
+extern Sexp TRUE;
+extern Sexp FALSE;
 
 class Nil : public Exp {
- public:
   Nil() {
   }
 
+ public:
+  static Sexp INSTANCE;
+  
   virtual ~Nil() {
   }
 
@@ -361,23 +344,18 @@ class Nil : public Exp {
 
   Sexp call_(Sexp _this, const Sexp arg) const override {  
     //std::cerr << "nil(x0)" << std::endl;
-    return CreateTrue();
+    return TRUE;
   }
 };
 
+extern Sexp NIL;
+extern Sexp CONS;
+  
 inline Sexp nil() {
-  return Sexp(new Nil());
+  return NIL;
 }
-
 inline Sexp Cons() {
-  return Sexp(new TriFunc(
-        "cons",
-        [](Sexp x0, Sexp x1, Sexp x2) {
-          x0 = eval(x0);
-          x1 = eval(x1);
-          x2 = eval(x2);
-          return ap(ap(x2, x0), x1);
-        }));
+  return CONS;
 }
 
 inline Sexp Cons(Sexp x0, Sexp x1) {
@@ -404,49 +382,38 @@ inline Sexp List(Sexp x0, Sexp x1, Sexp x2) {
   return ap(ap(Cons(), x0), List(x1, x2));
 }
 
+extern Sexp CAR;
 inline Sexp Car() {
-  return Sexp(new UnaryFunc(
-      "car",
-      [](Sexp a){
-        Sexp e = eval(a);
-        return ap(e, CreateTrue());
-      }));
+  return CAR;
 }
-
+extern Sexp CDR;
 inline Sexp Cdr() {
-  return Sexp(new UnaryFunc(
-      "cdr",
-      [](Sexp a){
-        Sexp e = eval(a);
-        return ap(e, CreateFalse());
-      }));
+  return CDR;
 }
 
+extern Sexp IF0;
 inline Sexp If0() {
-  return Sexp(new TriFunc(
-      "if0",
-      [](Sexp c, Sexp a, Sexp b){
-        bint e = to_int(c);
-        if (e == 0) {
-          return eval(a);
-        } else {
-          return eval(b);
-        }
-      }));
+  return IF0;
 }
 
 std::string modImpl(Sexp a);
 
+extern Sexp MOD;
 inline Sexp Mod() {
-  return Sexp(new UnaryFunc(
-      "mod",
-      [](Sexp a){
-        return Sexp(new ModResult(modImpl(a)));
-      }));
+  return MOD;
 }
 
-Sexp Dem();
+extern Sexp DEM;
+inline Sexp Dem() {
+  return DEM;
+}
+
 Sexp dem(std::string s);
+extern Sexp MODEM;
+inline Sexp modem() {
+  return MODEM;
+}
+
 std::tuple<Sexp, std::string> demImpl(std::string s);
 Sexp multipledraw();
 
