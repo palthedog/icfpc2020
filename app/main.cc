@@ -340,10 +340,10 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
   }
 
   if (eval(game.staticGameInfo())->isNil()) {
-    fuel = 1;
-    snd = 1;
-    third = 1;
-    forth = 1;
+    fuel = 100;
+    snd = 8;
+    third = 16;
+    forth = 32;
   }
   
   cerr << "GameState: " << gameState << endl;
