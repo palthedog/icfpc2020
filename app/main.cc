@@ -329,24 +329,14 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
   int snd = 1;
   int third = 1;  // larger one consumes fewer fuel.
   int forth = 1;
-  if (localMode && game.role() == 0) {
-    /*
-    snd = 10;
-    third = 7; // OK: 10
-    forth = 5; // OK: 10
-    */
-    snd = 10;
-    third = 11; // OK: 11, NG: 16
-    forth = 5; // OK: 10
-  }
   
   // make valid START request using the provided playerKey and gameResponse returned from JOIN
   Sexp startParam;
   if (game.role() == 0) {
     // attacker    
-    startParam = List(num(268),
-                      num(30),
-                      num(10),
+    startParam = List(num(180),
+                      num(60),
+                      num(4),
                       num(2));
   } else {
     // defender

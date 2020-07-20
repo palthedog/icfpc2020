@@ -107,10 +107,11 @@ Sexp Bot::commands(GameResponse game, const Ship& myShip, Sexp cmds) const {
   Ship enemyShip = getWeekShip(game);
   Sexp shipId = num(myShip.shipId());
 
+  V g = nextGravity(myShip);
   V ePos = enemyShip.position();
   V eVel = enemyShip.velocity();
   if (game.role() == 0) {
-    V shootTarget = ePos + eVel;
+    V shootTarget = ePos + eVel + g;
     Sexp sht = myShip.shoot(shootTarget.x, shootTarget.y, 2);
     cmds = Cons(sht, cmds);
     cout << "CMD Shoot: " << ePos << endl;
@@ -128,7 +129,6 @@ Sexp Bot::commands(GameResponse game, const Ship& myShip, Sexp cmds) const {
   cout << "ReqV: " << reqV << endl;
 
   V pos = myShip.position();
-  V g = nextGravity(myShip);
   double cr0 = (vel + bestScnd.first + g).cross(-pos);
   double cr1 = (vel + bestScnd.second + g).cross(-pos);
   
@@ -136,7 +136,7 @@ Sexp Bot::commands(GameResponse game, const Ship& myShip, Sexp cmds) const {
   cout << "Cross1: " << cr1 << endl;
   bool oppositeDirection = (cr0 * cr1 < 0);
   
-  if (abs(cr0) < 200) {  // velLen < reqV
+  if (abs(cr0) < 280) {  // velLen < reqV
     V best = bestScnd.first;
     if (oppositeDirection &&
         (myShip.shipId() % 2 == 0) &&
