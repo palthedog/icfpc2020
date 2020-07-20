@@ -99,7 +99,7 @@ string post(const string&path, const string& body) {
 		return "";
 	}
 
-	//std::cout << "Server response: " << serverResponse->body << std::endl;
+	std::cout << "Server response: " << serverResponse->body << std::endl;
 	return serverResponse->body;
 }
 
