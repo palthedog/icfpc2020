@@ -231,12 +231,12 @@ void visualizeGame(GameResponse game) {
   }
   plot->endDraw();
 
-  plot->startDraw();
   for (const Ship& s : game.ships()) {
+    plot->startDraw();
     auto pos = s.position();
     plot->draw((int)pos.x, (int)pos.y);
+    plot->endDraw();
   }
-  plot->endDraw();
   
   plot->flush();
 }
@@ -412,8 +412,9 @@ int runBot() {
       break;
     }
 
-    Sexp cmd = bot.command(game);
-    Sexp commandRequest = List(num(4), playerKey, List(cmd));
+    Sexp cmds = bot.commands(game);
+    cout << "Cmds: " << cmds << endl;
+    Sexp commandRequest = List(num(4), playerKey, cmds);
     gameResponse = call(SEND, commandRequest);
     cout << "game respones: " << gameResponse << endl;
   }

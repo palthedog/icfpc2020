@@ -21,7 +21,6 @@ V targetV(GameResponse game, const Ship& ship) {
   bint tvx1 = cos_90 * dx - sin_90 * dy;
   bint tvy1 = sin_90 * dx + cos_90 * dy;
 
-
   V v = ship.velocity();
   V tv0(tvx0, tvy0);
   V tv1(tvx1, tvy1);
@@ -31,14 +30,22 @@ V targetV(GameResponse game, const Ship& ship) {
   
   bint d0 = v.dist(tv0);
   bint d1 = v.dist(tv1);
-  
-  if (d0 < d1) {
+  cerr << "D0: " << d0 << endl;
+  cerr << "D1: " << d1 << endl;
+  double a0 = v.angle(tv0);
+  double a1 = v.angle(tv1);
+  cerr << "Ang0: " << a0 << endl;
+  cerr << "Ang1: " << a1 << endl;
+
+  if (a0 < a1) {
     return tv0;
   }
   return tv1;
 }
 
-Sexp Bot::command(GameResponse game) {
+Sexp Bot::commands(GameResponse game) {
+  Sexp cmds = nil();
+
   Ship myShip = game.myShip();
   Ship enemyShip = game.enemyShip();
   
@@ -46,15 +53,24 @@ Sexp Bot::command(GameResponse game) {
 
   V ePos = enemyShip.position();
   V dp = ePos - myShip.position();
-  
-  if (game.role() == 0 && game.gameTick() % 5 == 0) {
-    return myShip.shoot(ePos.x, ePos.y);
+
+  if (game.role() == 0) {
+    cmds = Cons(myShip.shoot(ePos.x, ePos.y), cmds);
+    cout << "CMD Shoot: " << ePos << endl;
   }
 
   // Move
   V tv = targetV(game, myShip);
   cerr << "targetV: " << tv << endl;
-  V normalizedTargetV = tv.norm();
-  cerr << "norm TargetV: " << normalizedTargetV << endl;
-  return myShip.accel(-normalizedTargetV.x, -normalizedTargetV.y);
+
+  double angle = myShip.velocity().angle(tv);
+  double angleDegree = (180.0 * angle) / 3.14;
+  cerr << "angleDegree: " << angleDegree << endl;
+  if (angleDegree > 30.0) {
+    V accel = (myShip.velocity() - tv).norm();
+    Sexp mov = myShip.accel(accel.x, accel.y);
+    cmds = Cons(mov, cmds);
+    cout << "CMD Move: " << accel << endl;
+  }
+  return cmds;
 }

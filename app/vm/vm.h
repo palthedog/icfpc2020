@@ -6,6 +6,7 @@
 #include <map>
 #include <tuple>
 #include <vector>
+#include <cmath>
 
 #include <memory>
 
@@ -426,6 +427,17 @@ struct V {
     return abs(dx) + abs(dy);
   }
 
+  double angle(const V& other) const {
+    bint a = (x * other.x + y * other.y);
+    double cs = ((double) a) / (len() * other.len());
+    return acos(cs);
+  }
+
+  double len() const {
+    bint n = (x * x + y * y);
+    return std::sqrt((double) n);
+  }
+  
   V norm() const {
     if (abs(x) > abs(y)) {
       return V(x > 0 ? 1 : -1, 0);

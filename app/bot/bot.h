@@ -12,7 +12,7 @@ class Bot {
       : playerKey_(playerKey) {
   }
 
-  Sexp command(GameResponse game);
+  Sexp commands(GameResponse game);
 };
 
 #endif
