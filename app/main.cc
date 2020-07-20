@@ -381,7 +381,7 @@ int runBot() {
   gameResponse = startGame(playerKey, gameResponse);
   if (!checkGame(gameResponse)) {
     cout << "Failed to start game: " << gameResponse << endl;
-    return 1;
+    return 0;
   }
 
   cout << "Game Response: " << gameResponse << endl;
