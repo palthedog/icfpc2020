@@ -52,10 +52,10 @@ Sexp Bot::commands(GameResponse game) {
   Sexp shipId = num(myShip.shipId());
 
   V ePos = enemyShip.position();
-  V dp = ePos - myShip.position();
-
+  V eVel = enemyShip.velocity();
   if (game.role() == 0) {
-    cmds = Cons(myShip.shoot(ePos.x, ePos.y), cmds);
+    V shootTarget = ePos + eVel;
+    cmds = Cons(myShip.shoot(shootTarget.x, shootTarget.y, 2), cmds);
     cout << "CMD Shoot: " << ePos << endl;
   }
 

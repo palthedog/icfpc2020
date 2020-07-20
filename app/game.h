@@ -65,9 +65,9 @@ class Ship {
     return List(num(0), num(shipId()), v);
   }
 
-  Sexp shoot(bint x, bint y) {
+  Sexp shoot(bint x, bint y, bint size) {
     Sexp v = Vec(num(x), num(y));
-    Sexp x3 = num(1);
+    Sexp x3 = num(size);
     return List(num(2), num(shipId()), v, x3);
   }
 };

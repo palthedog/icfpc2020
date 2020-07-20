@@ -458,6 +458,9 @@ inline std::ostream& operator<<(std::ostream&os, const V&e) {
 inline V operator-(const V&a, const V&b) {
   return V(a.x - b.x, a.y - b.y);
 }
+inline V operator+(const V&a, const V&b) {
+  return V(a.x + b.x, a.y + b.y);
+}
 
 
 inline V toV(Sexp v) {
