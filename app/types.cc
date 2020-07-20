@@ -10,9 +10,14 @@ namespace mp = boost::multiprecision;
 string numToStr(bint num) {
   string s;
 
-  breal num_r(num);
-  breal bw = mp::floor(mp::sqrt(mp::log(num_r) / mp::log(breal(2.0)))) + 1;
-
+  int bits = msb(num);
+  int bw = 0;
+  for (bw = 0; bw < 100; bw++) {
+    if (bw * bw >= bits) {
+      break;
+    }
+  }
+  
   cerr << "num: " << num << endl;
   cerr << "bw: " << bw << endl;
   int w = (int) bw;

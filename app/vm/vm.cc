@@ -481,6 +481,7 @@ std::string modNum(bint num) {
   return s;
 }
 
+/*
 std::string modNumOld(bint num) {
   // cerr << "modNum(" << num << ")" << endl;
   
@@ -524,6 +525,7 @@ std::string modNumOld(bint num) {
   }
   return s;
 }
+*/
 
 std::string modImpl(Sexp e) {
   e = eval(e);

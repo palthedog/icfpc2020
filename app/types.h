@@ -6,7 +6,7 @@
 
 namespace mp = boost::multiprecision;
 using bint = mp::cpp_int;
-using breal = mp::cpp_dec_float_100;
+//using breal = mp::cpp_dec_float_100;
 
 std::string numToStr(bint num);
 bint decode(const std::string&bstr);
