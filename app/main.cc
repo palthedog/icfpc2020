@@ -440,7 +440,20 @@ int main(int argc, char* argv[]) {
   }
 
   cout << "eval..." << endl;
-  cout << modNum(bint("3167558396624468277")) << endl;
+  cout << "mod:     " << modNum(   bint("3167558396624468277")) << endl;
+  cout << "mod-old: " << modNumOld(bint("3167558396624468277")) << endl;
+  cout << "dem:     " << dem(modNum(   bint("3167558396624468277"))) << endl;
+  cout << "dem-old: " << dem(modNumOld(bint("3167558396624468277"))) << endl;
+
+  cout << "mod:     " << modNum(   bint("16")) << endl;
+  cout << "mod-old: " << modNumOld(bint("16")) << endl;
+  cout << "dem:     " << dem(modNum(   bint("16"))) << endl;
+  cout << "dem-old: " << dem(modNumOld(bint("16"))) << endl;
+
+  cout << "mod:     " << modNum(   bint("147")) << endl;
+  cout << "mod-old: " << modNumOld(bint("147")) << endl;
+  cout << "dem:     " << dem(modNum(   bint("147"))) << endl;
+  cout << "dem-old: " << dem(modNumOld(bint("147"))) << endl;
 
   parseArgv(argc, argv);
   if (argc == 3) {

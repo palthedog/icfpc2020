@@ -459,12 +459,57 @@ std::string modNum(bint num) {
     cerr << "raw bits: " << bits_r << endl;
     cerr << msb(num) << endl;
     */
-    bits = msb(num) + 1;
-    width = bits * 4;
+    bits = msb(num);
+    width = (bits / 4) + 1;
   }
   
   bits = width * 4;
-  //cerr << "bits: " << bits << ", width: " << width << endl;
+
+  cerr << "bits: " << bits << ", width: " << width << endl;
+  for (int i = 0; i < width; i++) {
+    s += '1';
+  }
+  s += '0';
+
+  for (int i = bits - 1; i >= 0; i--) {
+    if (mp::bit_test(num, i)) {
+      s += '1';
+    } else {
+      s += '0';
+    }
+  }
+  return s;
+}
+
+std::string modNumOld(bint num) {
+  // cerr << "modNum(" << num << ")" << endl;
+  
+  string s;
+  if (num >= 0) {
+    s = "01";
+  } else {
+    s = "10";
+    num = -num;
+  }
+
+  int width = 0;  
+  int bits = 0;
+  if (num == 0) {
+    width = 0;
+  } else {
+    breal num_r(num);
+    breal bits_r = mp::floor(mp::log(num_r) / mp::log(breal(2.0))) + 1;
+    breal width_r = (bits_r / 4) + 1;
+    width = (int) width_r;
+    bits = (int) bits;
+
+    cerr << num << endl;
+    cerr << "raw bits: " << bits_r << endl;
+    cerr << msb(num) << endl;
+  }
+  
+  bits = width * 4;
+  cerr << "bits: " << bits << ", width: " << width << endl;
   for (int i = 0; i < width; i++) {
     s += '1';
   }
@@ -515,12 +560,12 @@ tuple<Sexp, string> demElem(string s) {
     width++;
   }
   int bits = width * 4;
-  //cerr << "width: " << width << ", bits: " << bits << endl;
+  cerr << "width: " << width << ", bits: " << bits << endl;
   tail = tail.substr(width + 1); // +1 for last '0'
-  //cerr << "tail: " << tail << endl;
+  cerr << "tail: " << tail << endl;
   
   string numStr = tail.substr(0, bits);
-  //cerr << "numStr: " << numStr << endl;
+  cerr << "numStr: " << numStr << endl;
   
   bint n = 0;
   if (numStr != "") {

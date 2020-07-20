@@ -459,6 +459,7 @@ inline Sexp If0() {
 
 std::string modImpl(Sexp a);
 std::string modNum(bint num);
+std::string modNumOld(bint num);
 
 extern Sexp MOD;
 inline Sexp Mod() {
