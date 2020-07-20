@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <sstream>
+#include <iostream>
 
 #include <vm/vm.h>
 #include <game.h>
@@ -15,7 +16,7 @@ class Ship {
  public:
   Ship(Sexp ship) : ship_(ship) {
   }
-  
+
   bint role() const {
     return to_int(nth(ship_, 0));
   }
@@ -40,6 +41,18 @@ class Ship {
     return to_int(car(spec()));
   }
 
+  bint damage() const {
+    return to_int(nth(ship_, 5));
+  }
+
+  bint maxHp() const {
+    return to_int(nth(ship_, 6));
+  }
+
+  bint numParts() const {
+    return to_int(nth(spec(), 3));
+  }
+
   std::string toString() const {
     std::ostringstream oss;
     auto pos = position();
@@ -50,25 +63,32 @@ class Ship {
         ", pos:" << pos <<
         ", vel:" << vel <<
         ", fuel:" << fuel() <<
-        "   spec:" << spec() <<
-        ", b:" << eval(nth(ship_, 5)) <<
-        ", c:" << eval(nth(ship_, 6)) <<
+        "  spec:" << spec() <<
+        ", damage:" << damage() << '/' << maxHp() <<
         ", d:" << eval(nth(ship_, 7)) <<
         ")";
     return oss.str();
   }
 
-
   // Command
-  Sexp accel(bint x, bint y) {
+  Sexp accel(bint x, bint y) const {
     Sexp v = Vec(num(x), num(y));
     return List(num(0), num(shipId()), v);
   }
 
-  Sexp shoot(bint x, bint y, bint size) {
+  Sexp shoot(bint x, bint y, bint size)const {
     Sexp v = Vec(num(x), num(y));
-    Sexp x3 = num(size);
-    return List(num(2), num(shipId()), v, x3);
+    return List(num(2), num(shipId()), v, num(size));
+  }
+
+  Sexp split()const {
+    Sexp s = spec();
+    return List(num(3),
+                num(shipId()),
+                List(num(to_int(nth(s, 0)) / 2),
+                     num(to_int(nth(s, 1)) / 2),
+                     num(to_int(nth(s, 2)) / 2),
+                     num(to_int(nth(s, 3)) / 2)));
   }
 };
 
@@ -106,28 +126,6 @@ class GameResponse {
   Sexp shipsAndCommands() const {
     return nth(gameState(), 2);
   }
-
-  Ship myShip() const {
-    for (const auto& s : ships()) {
-      if (s.role() == role()) {
-        return s;
-      }
-    }
-    std::cerr << "my ship not found" << std::endl;
-    exit(1);
-    return Ship(NIL);
-  }
-
-  Ship enemyShip() const {
-    for (const auto& s : ships()) {
-      if (s.role() != role()) {
-        return s;
-      }
-    }
-    std::cerr << "enemy ship not found" << std::endl;
-    exit(1);
-    return Ship(NIL);
-  }
   
   std::vector<Ship> ships() const {
     Sexp l = eval(shipsAndCommands());
@@ -141,6 +139,11 @@ class GameResponse {
   }
 };
 
+inline std::ostream& operator<<(std::ostream&os, const Ship&s) {
+  os << s.toString();
+  return os;
+}
+
 inline bool checkGame(Sexp state) {
   GameResponse game(state);
   if (!game.ok()) {
@@ -150,4 +153,3 @@ inline bool checkGame(Sexp state) {
 }
 
 #endif
-

@@ -364,7 +364,7 @@ inline Sexp List() {
 }
 
 inline Sexp List(Sexp x0) {
-  return ap(ap(Cons(), x0), nil());
+  return Cons(x0, nil());
 }
 
 inline Sexp List(Sexp x0, Sexp x1) {
@@ -378,6 +378,15 @@ inline Sexp List(Sexp x0, Sexp x1, Sexp x2) {
 inline Sexp List(Sexp x0, Sexp x1, Sexp x2, Sexp x3) {
   return ap(ap(Cons(), x0), List(x1, x2, x3));
 }
+
+inline Sexp List(Sexp x0, Sexp x1, Sexp x2, Sexp x3, Sexp x4) {
+  return Cons(x0, List(x1, x2, x3, x4));
+}
+
+inline Sexp List(Sexp x0, Sexp x1, Sexp x2, Sexp x3, Sexp x4, Sexp x5) {
+  return Cons(x0, List(x1, x2, x3, x4, x5));
+}
+
 
 extern Sexp CAR;
 inline Sexp Car() {
@@ -429,7 +438,11 @@ struct V {
 
   double angle(const V& other) const {
     bint a = (x * other.x + y * other.y);
-    double cs = ((double) a) / (len() * other.len());
+    double length = len() * other.len();
+    if (length == 0) {
+      return 0.0;
+    }
+    double cs = ((double) a) / (double) length;
     return acos(cs);
   }
 
@@ -446,6 +459,7 @@ struct V {
   }
 
   friend std::ostream& operator<<(std::ostream&os, const V&e);
+
   V operator-() const {
     return V(-x, -y);
   }

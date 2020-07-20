@@ -12,7 +12,8 @@ class Bot {
       : playerKey_(playerKey) {
   }
 
-  Sexp commands(GameResponse game);
+  Sexp commands(GameResponse game, const Ship& ship, Sexp cmds) const;
+  Ship getWeekShip(GameResponse game) const;
 };
 
 #endif

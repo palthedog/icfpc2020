@@ -503,9 +503,10 @@ std::string modNumOld(bint num) {
     width = (int) width_r;
     bits = (int) bits;
 
-    cerr << num << endl;
-    //cerr << "raw bits: " << bits_r << endl;
-    cerr << msb(num) << endl;
+    // TODO: use it.
+    // cerr << num << endl;
+    // cerr << "raw bits: " << bits_r << endl;
+    // cerr << msb(num) << endl;
   }
   
   bits = width * 4;

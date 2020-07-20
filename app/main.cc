@@ -6,7 +6,7 @@
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #define CPPHTTPLIB_KEEPALIVE_TIMEOUT_SECOND 60
 #define CPPHTTPLIB_READ_TIMEOUT_SECOND 100
-#define CPPHTTPLIB_WRITE_TIMEOUT_SECOND 20
+#define CPPHTTPLIB_WRITE_TIMEOUT_SECOND 40
 #include "httplib.h"
 
 #include <vm/vm.h>
@@ -341,10 +341,20 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
   }
   
   // make valid START request using the provided playerKey and gameResponse returned from JOIN
-  Sexp startParam = List(num(fuel),
-                         num(snd),
-                         num(third),
-                         num(forth));
+  Sexp startParam;
+  if (game.role() == 0) {
+    // attacker    
+    startParam = List(num(268),
+                      num(30),
+                      num(10),
+                      num(2));
+  } else {
+    // defender
+    startParam = List(num(300),
+                      num(1),
+                      num(1),
+                      num(1));
+  }
   Sexp startRequest = List(num(3), playerKey, startParam);
 
   cout << "Start Request: " << startRequest << endl;
@@ -386,6 +396,8 @@ int runBot() {
     plot.reset(new Plot());
   }
 
+  bint myRole = GameResponse(gameResponse).role();
+  cout << "My Role: " << myRole << endl;
   Bot bot(playerKey);
   while (true) {
     GameResponse game(gameResponse);
@@ -412,8 +424,13 @@ int runBot() {
       break;
     }
 
-    Sexp cmds = bot.commands(game);
-    cout << "Cmds: " << cmds << endl;
+    Sexp cmds = nil();
+
+    for (const Ship& s : game.ships()) {
+      if (s.role() == myRole) {
+        cmds = bot.commands(game, s, cmds);
+      }
+    }
     Sexp commandRequest = List(num(4), playerKey, cmds);
     gameResponse = call(SEND, commandRequest);
     cout << "game respones: " << gameResponse << endl;
@@ -432,22 +449,6 @@ int main(int argc, char* argv[]) {
     cerr << argv[0] << "<server> <key>" << endl;
     return 1;
   }
-
-  cout << "eval..." << endl;
-  cout << "mod:     " << modNum(   bint("3167558396624468277")) << endl;
-  cout << "mod-old: " << modNumOld(bint("3167558396624468277")) << endl;
-  cout << "dem:     " << dem(modNum(   bint("3167558396624468277"))) << endl;
-  cout << "dem-old: " << dem(modNumOld(bint("3167558396624468277"))) << endl;
-
-  cout << "mod:     " << modNum(   bint("16")) << endl;
-  cout << "mod-old: " << modNumOld(bint("16")) << endl;
-  cout << "dem:     " << dem(modNum(   bint("16"))) << endl;
-  cout << "dem-old: " << dem(modNumOld(bint("16"))) << endl;
-
-  cout << "mod:     " << modNum(   bint("147")) << endl;
-  cout << "mod-old: " << modNumOld(bint("147")) << endl;
-  cout << "dem:     " << dem(modNum(   bint("147"))) << endl;
-  cout << "dem-old: " << dem(modNumOld(bint("147"))) << endl;
 
   parseArgv(argc, argv);
   if (argc == 3) {
