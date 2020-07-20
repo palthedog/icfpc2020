@@ -9,7 +9,7 @@ V nextGravity(const Ship&s) {
   return -s.position().norm();
 }
 
-V targetV(GameResponse game, const Ship& ship, bool& close) {
+pair<V, V> targetV(GameResponse game, const Ship& ship, bool& close) {
   auto pos = ship.position();  
   
   bint dx = -pos.x;
@@ -32,64 +32,38 @@ V targetV(GameResponse game, const Ship& ship, bool& close) {
   
   V v = ship.velocity() + g;
   
-  if (v.len() == 0) {
-    vector<V> candidates = {
-      V(1, 0),
-      V(-1, 0),
-      V(0, 1),
-      V(0, -1),
-      V(1, 1),
-      V(-1, -1),
-      V(-1, 1),
-      V(1, -1),
-    };
-    int bextI = 0;
-    double bestAngle = 2.0;
-    for (int i = 0; i < 4; i++) {
-      V c = candidates[i];
-      if ((c + g).len() == 0) {
-        continue;
-      }
-      double a0 = c.angle(tv0);
-      double a1 = c.angle(tv1);
-      if (bestAngle > a0) {
-        bestAngle = a0;
-        bextI = i;
-      }
-      if (bestAngle > a1) {
-        bestAngle = a1;
-        bextI = i;
-      }
-    }
-    v = candidates[bextI];
-    cout << "v == 0. -> " << v << endl;
-  }
-
-  cerr << "TargetV0: " << tv0 << endl;
-  cerr << "TargetV1: " << tv1 << endl;
-  double a0 = v.angle(tv0);
-  double a1 = v.angle(tv1);
-  cerr << "Ang0: " << a0 << endl;
-  cerr << "Ang1: " << a1 << endl;
-
-  double angleDiff = abs(a0 - a1);
-  cerr << "Angle diff: " << angleDiff << endl;
-  close = angleDiff < 0.4;
-  if (close && ship.role() == 0) {
-    if ((ship.shipId() % 2) == 1) {
-      // reverse
-      cerr << "Reverse target" << endl;
-      if (a0 < a1) {
-        return tv1;
-      }
-      return tv0;
+  vector<V> candidates = {
+    V(1, 0),
+    V(-1, 0),
+    V(0, 1),
+    V(0, -1),
+    V(1, 1),
+    V(-1, -1),
+    V(-1, 1),
+    V(1, -1),
+  };
+  int bestI = 0;
+  int secondI = 0;
+  double bestCross = 0;
+  double secondCross = 0;
+  cout << "pos: " << pos << endl;
+  cout << "G: " << g << endl;
+  for (int i = 0; i < 8; i++) {
+    V cand = candidates[i] + v;
+    double crs = cand.cross(-pos);
+    cout << candidates[i] << ", cross: " << crs << endl;
+    crs = abs(crs);
+    
+    if (bestCross < crs) {
+      secondCross = bestCross;
+      secondI = bestI;
+      
+      bestI = i;
+      bestCross = crs;
     }
   }
-  
-  if (a0 < a1) {
-    return tv0;
-  }
-  return tv1;
+  cout << "Best second I " << bestI << " " << secondI << endl;
+  return make_pair(candidates[bestI], candidates[secondI]);
 }
 
 Ship Bot::getWeekShip(GameResponse game) const {
@@ -144,26 +118,44 @@ Sexp Bot::commands(GameResponse game, const Ship& myShip, Sexp cmds) const {
 
   // Move
   bool close = false;
-  V tv = targetV(game, myShip, close);
-  cerr << "targetV: " << tv << endl;
+  auto bestScnd = targetV(game, myShip, close);
+  cout << "best second: " << bestScnd.first << " " << bestScnd.second << endl;
 
-  double vel = myShip.velocity().len();
+  V vel = myShip.velocity();
+  double velLen = vel.len();
   double reqV = requiredVel(myShip);
-  cout << "Vel: " << vel << endl;
+  cout << "Vel: " << velLen << endl;
   cout << "ReqV: " << reqV << endl;
+
+  V pos = myShip.position();
+  V g = nextGravity(myShip);
+  double cr0 = (vel + bestScnd.first + g).cross(-pos);
+  double cr1 = (vel + bestScnd.second + g).cross(-pos);
   
-  double angle = myShip.velocity().angle(tv);
-  double angleDegree = (180.0 * angle) / 3.14;
-  cerr << "angleDegree: " << angleDegree << endl;
-  if (angleDegree > 30.0 || vel < reqV) {
-    V accel = (myShip.velocity() - tv).norm2();
-    Sexp mov = myShip.accel(accel.x, accel.y);
+  cout << "Cross0: " << cr0 << endl;
+  cout << "Cross1: " << cr1 << endl;
+  bool oppositeDirection = (cr0 * cr1 < 0);
+  
+  if (abs(cr0) < 200) {  // velLen < reqV
+    V best = bestScnd.first;
+    if (oppositeDirection &&
+        (myShip.shipId() % 2 == 0) &&
+        cr0 < 0) {
+      cout << "prefer positive" << endl;
+      best = bestScnd.second;
+    }
+    if (oppositeDirection &&
+        (myShip.shipId() % 2 == 1) &&
+        cr0 > 0) {
+      cout << "prefer negative" << endl;
+      best = bestScnd.second;
+    }
+    Sexp mov = myShip.accel(-best.x, -best.y);
     cmds = Cons(mov, cmds);
-    cout << "CMD Move: " << accel << endl;
+    cout << "CMD Move: " << -best << endl;
   }
 
-  bool far = myShip.position().len() > 80;
-  if (myShip.numParts() > 1 && close) {
+  if (myShip.numParts() > 1 && oppositeDirection) {
     cmds = Cons(myShip.split(), cmds);
     cout << "CMD split" << endl;
   }

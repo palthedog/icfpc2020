@@ -452,7 +452,8 @@ struct V {
   }
 
   double cross(const V& other) {
-    return x * other.y - y * other.x;
+    bint cr = x * other.y - y * other.x;
+    return (double)cr;
   }
   
   V norm() const {
