@@ -80,7 +80,8 @@ string post(const string&path, const string& body) {
   if (apiKey != "") {
     pathWithKey += "?apiKey=" + apiKey;
   }
-  //std::cout << "PathWithKey: " << pathWithKey << "; body: " << body << std::endl;
+  std::cout << "PathWithKey: " << pathWithKey << endl;
+  std::cout << "body: " << body << std::endl;
 
   const std::shared_ptr<httplib::Response> serverResponse = 
       pclient->Post(pathWithKey.c_str(), body.c_str(), "text/plain");
@@ -357,7 +358,7 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
   cout << "Start Request: " << startRequest << endl;
   // send it to aliens and get the updated GameResponse
   Sexp startResponse = call(SEND, startRequest);
-  cout << "Start request: " << startRequest << endl;
+  cout << "Start response: " << startResponse << endl;
   return startResponse;
 }
 
