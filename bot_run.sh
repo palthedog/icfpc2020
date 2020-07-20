@@ -14,7 +14,7 @@ cd build
 
     ./main "$@" $line1 |& tee ../0.log &
 
-    ./main "$@" $line2 >& ../1.log
+    ./old "$@" $line2 >& ../1.log
     #gdb --batch -x ../gdbcmds --args ./main "$@" $line2
 
     wait
