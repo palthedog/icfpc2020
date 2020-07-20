@@ -329,7 +329,7 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
   int snd = 1;
   int third = 1;  // larger one consumes fewer fuel.
   int forth = 1;
-  if (!localMode || game.role() == 0) {
+  if (localMode && game.role() == 0) {
     /*
     snd = 10;
     third = 7; // OK: 10
@@ -338,13 +338,6 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
     snd = 10;
     third = 11; // OK: 11, NG: 16
     forth = 5; // OK: 10
-  }
-
-  if (eval(game.staticGameInfo())->isNil()) {
-    fuel = 100;
-    snd = 8;
-    third = 16;
-    forth = 32;
   }
   
   // make valid START request using the provided playerKey and gameResponse returned from JOIN
