@@ -63,8 +63,9 @@ bool parseArgv(int argc, char**argv) {
   }
 
   cout << "ServerURL: " << serverUrl << endl;
-	std::cout << "ServerName: " << serverName << "; APIKey: " << apiKey << std::endl;
-	std::cout << "PlayerKey: " << playerKeyStr << endl;
+  cout << "ServerPort: " << serverPort << endl;
+	cout << "ServerName: " << serverName << "; APIKey: " << apiKey << std::endl;
+	cout << "PlayerKey: " << playerKeyStr << endl;
   return true;
 }
 
@@ -88,7 +89,6 @@ string post(const string&path, const string& body) {
 
 	if (!serverResponse) {
 		std::cout << "Unexpected server response:\nNo response from server" << std::endl;
-    // retry
     exit(1);
 	}
 	
@@ -347,7 +347,6 @@ Sexp startGame(Sexp playerKey, Sexp gameState) {
     forth = 32;
   }
   
-  cerr << "GameState: " << gameState << endl;
   // make valid START request using the provided playerKey and gameResponse returned from JOIN
   Sexp startParam = List(num(fuel),
                          num(snd),
@@ -370,9 +369,9 @@ int runBot() {
   Sexp gameResponse = joinGame(playerKey);
   if (!checkGame(gameResponse)) {
     cout << "Failed to join game." << endl;
-    return 1;
+    return 0;
   }
-  ;
+
   Sexp info = GameResponse(gameResponse).staticGameInfo();
   cout << "***" << endl;
   cout << "Static Game Info: " << info << endl;
@@ -381,7 +380,7 @@ int runBot() {
   
   gameResponse = startGame(playerKey, gameResponse);
   if (!checkGame(gameResponse)) {
-    cout << "Failed to start game." << endl;
+    cout << "Failed to start game: " << gameResponse << endl;
     return 1;
   }
 
@@ -390,7 +389,7 @@ int runBot() {
 
   if (apiKey != "" && GameResponse(gameResponse).role() == 0) {
     // local test.
-    cerr << "Enable plotter" << endl;
+    cout << "Enable plotter" << endl;
     plot.reset(new Plot());
   }
 
