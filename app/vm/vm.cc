@@ -171,10 +171,10 @@ Sexp SEND(new UnaryFunc(
       "send",
       [](Sexp a) {
         Sexp s = eval(call(Mod(), a));
-        cerr << "send: " << s << endl;
-        string response = sendData("/aliens/send",s->mod());
-        Sexp res = dem(response);
-        cerr << "recv: " << res << endl;
+        cout << "send: " << s << endl;
+        string response = sendData("/aliens/send", s->mod());
+        Sexp res = eval(dem(response));
+        cout << "recv: " << res << endl;
         return res;
       }));
 Sexp send() {
@@ -448,12 +448,19 @@ std::string modNum(bint num) {
   if (num == 0) {
     width = 0;
   } else {
+    /*
     breal num_r(num);
     breal bits_r = mp::floor(mp::log(num_r) / mp::log(breal(2.0))) + 1;
     breal width_r = (bits_r / 4) + 1;
     width = (int) width_r;
     bits = (int) bits;
-    //cerr << "raw bits: " << bits_r << endl;
+
+    cerr << num << endl;
+    cerr << "raw bits: " << bits_r << endl;
+    cerr << msb(num) << endl;
+    */
+    bits = msb(num) + 1;
+    width = bits * 4;
   }
   
   bits = width * 4;

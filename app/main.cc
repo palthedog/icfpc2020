@@ -439,6 +439,9 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  cout << "eval..." << endl;
+  cout << modNum(bint("3167558396624468277")) << endl;
+
   parseArgv(argc, argv);
   if (argc == 3) {
     return runBot();
