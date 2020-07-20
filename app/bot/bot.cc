@@ -38,6 +38,10 @@ V targetV(GameResponse game, const Ship& ship, bool& close) {
       V(-1, 0),
       V(0, 1),
       V(0, -1),
+      V(1, 1),
+      V(-1, -1),
+      V(-1, 1),
+      V(1, -1),
     };
     int bextI = 0;
     double bestAngle = 2.0;
@@ -115,10 +119,13 @@ bool approaching(const Ship&a, const Ship&b) {
 }
 
 double requiredVel(const Ship&s) {
+  /*
   // V＝（398600/(6378+H)）1/2
   double C = 4000.0;
   double r = s.position().len();
   return sqrt(C / r);
+  */
+  return 7.0;
 }
 
 
@@ -149,15 +156,14 @@ Sexp Bot::commands(GameResponse game, const Ship& myShip, Sexp cmds) const {
   double angleDegree = (180.0 * angle) / 3.14;
   cerr << "angleDegree: " << angleDegree << endl;
   if (angleDegree > 30.0 || vel < reqV) {
-    V accel = (myShip.velocity() - tv).norm();
+    V accel = (myShip.velocity() - tv).norm2();
     Sexp mov = myShip.accel(accel.x, accel.y);
     cmds = Cons(mov, cmds);
     cout << "CMD Move: " << accel << endl;
   }
 
-  bool far = myShip.position().len() > 50;
-  //bool slow = myShip.velocity().len() < 10;
-  if (myShip.numParts() > 1 && far && close) {
+  bool far = myShip.position().len() > 80;
+  if (myShip.numParts() > 1 && close) {
     cmds = Cons(myShip.split(), cmds);
     cout << "CMD split" << endl;
   }

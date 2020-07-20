@@ -450,12 +450,21 @@ struct V {
     bint n = (x * x + y * y);
     return std::sqrt((double) n);
   }
+
+  double cross(const V& other) {
+    return x * other.y - y * other.x;
+  }
   
   V norm() const {
     if (abs(x) > abs(y)) {
       return V(x > 0 ? 1 : -1, 0);
     }
     return V(0, y > 0 ? 1 : -1);
+  }
+
+  V norm2() const {
+    double ln = len();
+    return V((bint) round(((double) x) / ln), (bint) round(((double) y) / ln));
   }
 
   friend std::ostream& operator<<(std::ostream&os, const V&e);
